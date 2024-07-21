@@ -33,8 +33,6 @@ int USB_connected_to_IDE = false;
 char BLE_ThreeLetterID[4];
 static char bleDeviceName[32];
 
-extern uint32 lastRcvTime; // xxx put in header
-
 // Generic helper functions
 
 void BLE_initThreeLetterID() {
@@ -114,10 +112,9 @@ static BLECharacteristic *pTxCharacteristic;
 static BLECharacteristic *pRxCharacteristic;
 static BLECharacteristic *pUARTTxCharacteristic;
 static BLECharacteristic *pUARTRxCharacteristic;
-static bool bleRunning = false;
-static bool serviceOnline = false;
-static uint16_t connID = -1;
 
+static bool bleRunning = false;
+static uint16_t connID = -1;
 static uint32 lastSendTime = 0;
 static int lastRC = 0;
 
@@ -129,8 +126,7 @@ static int overRuns = 0;
 
 static void updateConnectionState() {
 	if (USB_connected_to_IDE && !ideConnected()) {
-		// lost USB connection; resume BLE service and advertisting
-		if (pServer) pServer->addService(pService);
+		// lost USB connection; resume advertisting
 		USB_connected_to_IDE = false;
 		BLE_resumeAdvertising();
 	}
@@ -148,8 +144,6 @@ static void updateConnectionState() {
 			if (pServer) {
 				if (connID != -1) { pServer->disconnect(connID); }
 				connID = -1;
-				// remove IDE BLE service
-				pServer->removeService(pService);
 			}
 			BLE_connected_to_IDE = false;
 			// tell runtime that we've gotten a ping
@@ -269,7 +263,6 @@ void BLE_start() {
 	pService->start();
 	pUARTService->start();
 
-	serviceOnline = true;
 	bleRunning = true;
 
 	BLE_resumeAdvertising();
@@ -282,10 +275,9 @@ void BLE_stop() {
 	if (connID != -1) { pServer->disconnect(connID); }
 	connID = -1;
 	BLE_connected_to_IDE = false;
-	serviceOnline = false;
 
-	pServer->getAdvertising()->stop();
-	pServer->removeService(pService);
+	BLEDevice::getAdvertising()->reset();
+	if (pServer) pServer->removeService(pService);
 	BLEDevice::deinit();
 
 	pServer = NULL;
@@ -299,16 +291,17 @@ void BLE_stop() {
 // Stop and resume advertising (for use by Octo primitives)
 
 void BLE_pauseAdvertising() {
-	if (!pServer) return;
-	pServer->getAdvertising()->stop();
-	pServer->getAdvertising()->removeServiceUUID(NimBLEUUID(MB_SERVICE_UUID));
+	if (!bleRunning) return;
+
+	NimBLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+	pAdvertising->reset();
+	pAdvertising->removeServiceUUID(NimBLEUUID(MB_SERVICE_UUID));
 }
 
 void BLE_resumeAdvertising() {
-	if (!pServer) return;
+	if (!bleRunning) return;
 
 	NimBLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-	pAdvertising->stop();
 	pAdvertising->reset();
 	if (BLE_connected_to_IDE || USB_connected_to_IDE) {
 		return; // don't advertise if connected to IDE
@@ -317,7 +310,7 @@ void BLE_resumeAdvertising() {
 	pAdvertising->setName(bleDeviceName);
 	pAdvertising->setMinInterval(50);
 	pAdvertising->setMaxInterval(100);
-	if (serviceOnline) pAdvertising->start();
+	pAdvertising->start();
 }
 
 #elif defined(BLE_PICO)
