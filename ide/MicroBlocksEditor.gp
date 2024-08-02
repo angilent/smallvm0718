@@ -553,8 +553,8 @@ method step MicroBlocksEditor {
 	step httpServer
   }
   if ('unknown' == newerVersion) {
-    launch (global 'page') (newCommand 'checkLatestVersion' this) // start version check
-    newerVersion = nil
+    // launch (global 'page') (newCommand 'checkLatestVersion' this) // start version check
+    // newerVersion = nil
   } (notNil newerVersion) {
     reportNewerVersion this
     newerVersion = nil
@@ -753,6 +753,10 @@ method processDroppedFile MicroBlocksEditor fName data {
 	for entry (lines data) { addLoggedData (smallRuntime) entry }
   } (endsWith lcFilename '.png') {
     importFromPNG this data
+  } (endsWith lcFilename '.bin') {
+    // install ESP firmware file
+	if (isNil data) { return } // could not read file
+    installESPFirmwareFromFile (smallRuntime) fName data
   } (endsWith lcFilename '.gp') {
     // xxx for testing:
     eval (toString data) nil (topLevelModule)

@@ -680,6 +680,8 @@ method webSerialConnect SmallRuntime action {
 		connectionStartTime = (msecsSinceStart)
 		portName = 'webserial'
 		port = 1
+	    lastPingRecvMSecs = 0
+	    sendMsg this 'pingMsg'
 	}
 }
 
@@ -909,7 +911,7 @@ method updateConnection SmallRuntime {
 		// ping timeout: close port to force reconnection
 		print 'Lost communication to the board'
 		clearRunningHighlights this
-		if (not (isWebSerial this)) { closePort this }
+        closePort this
 		return 'not connected'
 	}
 }
@@ -957,12 +959,11 @@ method tryToConnect SmallRuntime {
 		if (isOpenSerialPort 1) {
 			portName = 'webserial'
 			port = 1
-			lastPingRecvMSecs = 0
-			waitForPing this
             if (lastPingRecvMSecs != 0) { // got a ping; we're connected!
                 justConnected this
                 return 'connected'
             }
+            sendMsg this 'pingMsg' // send another ping
 			return 'not connected' // don't make circle green until successful ping
 		} else {
 			portName = nil
@@ -981,11 +982,11 @@ method tryToConnect SmallRuntime {
 	lastScanMSecs = now
 
 	if (notNil connectionStartTime) {
-		waitForPing this
 		if (lastPingRecvMSecs != 0) { // got a ping; we're connected!
 			justConnected this
 			return 'connected'
 		}
+        sendMsg this 'pingMsg' // send another ping
 		if (now < connectionStartTime) { connectionStartTime = now } // clock wrap
 		if ((now - connectionStartTime) < connectionAttemptTimeout) { return 'not connected' } // keep trying
 	}
@@ -1119,7 +1120,7 @@ method versionReceived SmallRuntime versionString {
 
 method checkVmVersion SmallRuntime {
 	// prevent version check from running while the decompiler is working
-	if (not readFromBoard) { return }
+	if readFromBoard { return }
 	if ((latestVmVersion this) > vmVersion) {
 		ok = (confirm (global 'page') nil (join
 			(localized 'The MicroBlocks in your board is not current')
@@ -2629,6 +2630,7 @@ method showOutputStrings SmallRuntime {
 // Virtual Machine Installer
 
 method installVM SmallRuntime eraseFlashFlag downloadLatestFlag {
+    closeAllDialogs (findMicroBlocksEditor)
 	if ('Browser' == (platform)) {
 		installVMInBrowser this eraseFlashFlag downloadLatestFlag
 		return
@@ -2704,12 +2706,15 @@ method collectBoardDrives SmallRuntime {
 			if (notNil driveName) { add result (list driveName path) }
 		}
 	} ('Linux' == (platform)) {
-		for dir (listDirectories '/media') {
-			prefix = (join '/media/' dir)
-			for v (listDirectories prefix) {
-				path = (join prefix '/' v '/')
-				driveName = (getBoardDriveName this path)
-				if (notNil driveName) { add result (list driveName path) }
+		// Try both Debian ('/media') and Fedora ('/run/media') variants
+		for media (list '/media' '/run/media') {
+			for userName (listDirectories media) {
+				prefix = (join media '/' userName)
+				for v (listDirectories prefix) {
+					path = (join prefix '/' v '/')
+					driveName = (getBoardDriveName this path)
+					if (notNil driveName) { add result (list driveName path) }
+				}
 			}
 		}
 	} ('Win' == (platform)) {
@@ -2787,6 +2792,7 @@ method copyVMToBoard SmallRuntime driveName boardPath {
 		error (join (localized 'Could not read: ') (join 'precompiled/' vmFileName))
 	}
 	writeFile (join boardPath vmFileName) vmData
+	vmVersion = nil
 	print 'Installed' (join boardPath vmFileName) (join '(' (byteCount vmData) ' bytes)')
 	waitMSecs 2000
 	if (isOneOf driveName 'MICROBIT' 'MINI') { waitMSecs 8000 }
@@ -2874,7 +2880,7 @@ method flashVMInBrowser SmallRuntime boardName eraseFlashFlag downloadLatestFlag
 
 method copyVMToBoardInBrowser SmallRuntime eraseFlashFlag downloadLatestFlag boardName {
 	if (isOneOf boardName 'Citilab ED1' 'M5Stack-Core' 'M5StickC+' 'M5StickC' 'M5Atom-Matrix' '未来科技盒' 'handpy' 'COCUBE' 'ESP32' 'ESP8266' 'Databot') {
-		flashVMInBrowser this boardName eraseFlashFlag downloadLatestFlag
+		flashVM this boardName eraseFlashFlag downloadLatestFlag
 		return
 	}
 
@@ -3077,6 +3083,9 @@ method flashVM SmallRuntime boardName eraseFlashFlag downloadLatestFlag {
 		disconnected = true
 		flasherPort = port
 		port = nil
+		// workaround for ESP32 install issue introduced in 1.2.89:
+		flasherPort = nil
+		portName = 'webserial'
 	} else {
 		setPort this 'disconnect'
 		flasherPort = nil
@@ -3138,6 +3147,20 @@ method installESPFirmwareFromURL SmallRuntime {
 		flasherPort = nil
 	}
 	flasher = (newFlasher boardName portName false false)
-	addPart (global 'page') (spinner flasher)
 	installFromURL flasher flasherPort url
+}
+
+// Install ESP firmware from file
+
+method installESPFirmwareFromFile SmallRuntime fileName data {
+	if ('Browser' == (platform)) {
+		disconnected = true
+		flasherPort = port
+		port = nil
+	} else {
+		setPort this 'disconnect'
+		flasherPort = nil
+	}
+	flasher = (newFlasher fileName portName false false)
+	installFromData flasher flasherPort fileName data
 }
