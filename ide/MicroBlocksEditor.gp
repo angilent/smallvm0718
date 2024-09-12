@@ -1165,14 +1165,9 @@ method drawIcon MicroBlocksEditor {
 	return bm
 }
 
-// context menu
+// gear menu
 
-method rightClicked MicroBlocksEditor aHand {
-  popUpAtHand (contextMenu this) (global 'page')
-  return true
-}
-
-method contextMenu MicroBlocksEditor {
+method gearMenu MicroBlocksEditor {
   menu = (menu 'MicroBlocks' this)
   addItem menu 'about...' (action 'showAboutBox' (smallRuntime))
   addLine menu
@@ -1369,7 +1364,6 @@ method stopHTTPServer MicroBlocksEditor {
 
 method languageMenu MicroBlocksEditor {
   menu = (menu 'Language' this)
-  addItem menu 'English' (action 'setLanguage' this 'English')
   if ('Browser' == (platform)) {
 	for fn (sorted (listFiles 'translations')) {
 	  fn = (withoutExtension fn)
@@ -1428,7 +1422,7 @@ method languageChanged MicroBlocksEditor {
 // Iconic menus
 
 method settingsMenu MicroBlocksEditor {
-  popUpAtHand (contextMenu this) (global 'page')
+  popUpAtHand (gearMenu this) (global 'page')
 }
 
 method addIconButton MicroBlocksEditor icon selector hint width {

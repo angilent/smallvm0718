@@ -150,6 +150,8 @@ void hardwareInit() {
 		delay(20); // allow ButtonA pin to settle before starting interpreter loop
 	#endif
 	#if defined(COCUBE)
+        #include "soc/rtc_cntl_reg.h"  // for brownout control
+        WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
 		cocubeSensorInit();
 	#endif
 }
@@ -445,9 +447,9 @@ void hardwareInit() {
 #elif defined(MAKERPORT_V3) // must come before Zero
 
 	#define BOARD_TYPE "MakerPort V3"
-	#define DIGITAL_PINS 26
+	#define DIGITAL_PINS 28
 	#define ANALOG_PINS 9
-	#define TOTAL_PINS 26
+	#define TOTAL_PINS 28
 	static const int analogPin[] = {0, 1, 2, 3, 4, 5, 6, 13, 15};
 
 #elif defined(MAKERPORT) // must come before Zero
@@ -658,8 +660,8 @@ void hardwareInit() {
 	#define DEFAULT_L2_PIN 10
 	#define DEFAULT_R1_PIN 26
 	#define DEFAULT_R2_PIN 25
-	#define PIN_BUTTON_A 37
-	#define PIN_BUTTON_B 38
+	#define PIN_BUTTON_A 38
+	#define PIN_BUTTON_B 37
 	static const char reservedPin[TOTAL_PINS] = {
 		0, 1, 0, 1, 0, 1, 1, 1, 1, 0,
 		0, 1, 1, 0, 0, 1, 1, 1, 0, 0,
@@ -960,17 +962,27 @@ void hardwareInit() {
 		0, 0, 0, 1, 1, 0, 0, 0, 0};
 
 #elif defined(AIRM2MC3)
-	#define BOARD_TYPE "airm2m_core_esp32c3"
-	#define DIGITAL_PINS 22
-	#define ANALOG_PINS 5
-	#define TOTAL_PINS 22
-	static const int analogPin[] = {0, 1, 2, 3, 4};
-	#define PIN_LED 12
-	#define PIN_BUTTON_A 9
+//合宙ESP32C3
+	#define BOARD_TYPE "ESP32-C3"
+	#define DIGITAL_PINS 20
+	#define ANALOG_PINS 6
+	#define TOTAL_PINS 20
+	static const int analogPin[] = {};
+	#ifdef LED_BUILTIN
+		#define PIN_LED LED_BUILTIN
+	#elif !defined(PIN_LED)
+		#define PIN_LED 12
+	#endif
+	#if !defined(PIN_BUTTON_A)
+		#if defined(KEY_BUILTIN)
+			#define PIN_BUTTON_A KEY_BUILTIN
+		#else
+			#define PIN_BUTTON_A 9
+		#endif
+	#endif
 	static const char reservedPin[TOTAL_PINS] = {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 1, 1, 1, 1, 0, 0,
-		1, 1};
+		0, 0, 0, 0, 1, 1, 1, 1, 0, 0};
 
 #elif defined(ESP32_C3)
 	#define BOARD_TYPE "ESP32-C3"
@@ -1053,6 +1065,24 @@ void hardwareInit() {
 		1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
 		1, 0, 0, 0, 1, 0, 0, 0, 1, 1,
 		1, 1, 0, 0, 0, 0, 0, 1, 1, 0};
+
+//学而思游戏机
+#elif defined(XESGAME)
+	#define BOARD_TYPE "xesgame"
+	#define DIGITAL_PINS 40
+	#define ANALOG_PINS 16
+	#define TOTAL_PINS 40
+	static const int analogPin[] = {};
+	#define PIN_LED -1
+	#define PIN_BUTTON_A 34
+	#define PIN_BUTTON_B 12
+	#define DEFAULT_TONE_PIN 14
+	static const char reservedPin[TOTAL_PINS] = {
+		0, 1, 0, 1, 0, 0, 1, 1, 1, 1,
+		1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 0, 0, 0, 1, 0, 0, 0, 1, 1,
+		1, 1, 0, 0, 0, 0, 0, 1, 1, 0};
+//学而思游戏机
 
 #elif defined(ARDUINO_ARCH_ESP32)
 	#ifdef ARDUINO_IOT_BUS
@@ -1155,6 +1185,9 @@ void hardwareInit() {
 			#undef BOARD_TYPE
 			#define BOARD_TYPE "RP2040 XRP"
 			#define PIN_BUTTON_A 22
+		#elif defined(GIZMO_MECHATRONICS)
+			#undef BOARD_TYPE
+			#define BOARD_TYPE "RP2040 Gizmo"
 		#endif
 		#define DEFAULT_TONE_PIN 20 // speaker pin on PicoBricks board
 		static const char reservedPin[TOTAL_PINS] = {
@@ -1664,7 +1697,7 @@ void primSetUserLED(OBJ *args) {
 		}
 	#elif defined(ARDUINO_CITILAB_ED1) || defined(ARDUINO_M5Stack_Core_ESP32) || defined(ARDUINO_M5STACK_FIRE) || \
 		defined(ARDUINO_M5STACK_Core2) || defined(TTGO_DISPLAY) || defined(M5_CARDPUTER) || \
-		defined(FUTURE_LITE)
+		defined(FUTURE_LITE) || defined(COCUBE)
 			tftSetHugePixel(3, 1, (trueObj == args[0]));
 	#else
 		if (PIN_LED < 0) return; // board does not have a user LED
@@ -1733,7 +1766,7 @@ OBJ primButtonB(OBJ *args) {
 	#ifdef PIN_BUTTON_B
 		#if defined(ARDUINO_CITILAB_ED1)
 			return (buttonReadings[3] < CAP_THRESHOLD) ? trueObj : falseObj;
-		#elif defined(ARDUINO_NRF52840_CLUE)|| defined(FUTURE_LITE)
+		#elif defined(ARDUINO_NRF52840_CLUE)|| defined(FUTURE_LITE) || defined(XESGAME)//学而思游戏机
 			SET_MODE(PIN_BUTTON_B, INPUT_PULLUP);
 		#else
 			SET_MODE(PIN_BUTTON_B, INPUT);
@@ -2051,9 +2084,11 @@ Servo servo[TOTAL_PINS];
 static void setServo(int pin, int usecs) {
 	int servoIndex = pin;
 
-	#if defined(MAKERPORT) || defined(MAKERPORT_V2)
+	#if defined(MAKERPORT) || defined(MAKERPORT_V2) || defined(MAKERPORT_V3)
 		// The MakerPort (SAM D21) can use only the first 12 servo channels.
-		// Map pins 7-18 to those channels. Servo capable pins are: 7-12, 14, 16-17
+		// Map pins 7-18 to those channels.
+		// Makerport V1/V2 servo capable pins: 7-12, 14, 16-17
+		// Makerport V3 servo capable pins: 7-12, 14-16
 		servoIndex -= 7;
 		if (servoIndex < 0) return;
 	#endif
@@ -2062,8 +2097,8 @@ static void setServo(int pin, int usecs) {
 		if (servo[servoIndex].attached()) servo[servoIndex].detach();
 	} else {
 		if (!servo[servoIndex].attached()) {
-			// allow a wide range of pulse widths; MicroBlocks library imposes its own limits
-			servo[servoIndex].attach(pin, 200, 3000);
+			// allow a wide range of pulse widths
+			servo[servoIndex].attach(pin, 500, 2900); // On SAMD21, max must be <= 2911
 		}
 		servo[servoIndex].writeMicroseconds(usecs);
 	}

@@ -939,9 +939,9 @@ method justConnected SmallRuntime {
 		} else {
 			print 'Incremental download' vmVersion boardType
 		}
-		recompileAll = true
-		stopAndSyncScripts this true
-		softReset this
+        showDownloadProgress (findMicroBlocksEditor) 2 0
+        stopAndSyncScripts this true
+        softReset this
 	}
 }
 
@@ -1136,6 +1136,7 @@ method installBoardSpecificBlocks SmallRuntime {
 	if (or readFromBoard (notNil decompiler)) { return } // don't load libraries while decompiling
 	if (hasUserCode (project scripter)) { return } // don't load libraries if project has user code
 	if (boardLibAutoLoadDisabled (findMicroBlocksEditor)) { return } // board lib autoload has been disabled by user
+    if (isNil boardType) { return } // can happen if VM was updated by versionReceived
 
 	if ('Citilab ED1' == boardType) {
 		importEmbeddedLibrary scripter 'ED1 Buttons'
@@ -1183,7 +1184,9 @@ method installBoardSpecificBlocks SmallRuntime {
 		importEmbeddedLibrary scripter 'WuKong2040'
 	} ('Databot' == boardType) {
 		importEmbeddedLibrary scripter 'databot'
-	} ('MakerPort' == boardType) {
+	} ('RP2040 Gizmo' == boardType) {
+		importEmbeddedLibrary scripter 'Gizmo'
+	} (beginsWith boardType 'MakerPort') {
 		importEmbeddedLibrary scripter 'MakerPort'
 	}
 }
@@ -1802,7 +1805,7 @@ method serialDelayMenu SmallRuntime {
 	for i (range 1 5) { addItem menu i }
 	for i (range 6 20 2) { addItem menu i }
 	addLine menu
-	addItem menu 'reset to default'
+	addItem menu 'reset to default (10)'
 	popUpAtHand menu (global 'page')
 }
 

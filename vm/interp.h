@@ -22,7 +22,7 @@ extern "C" {
 
 // Global Variables
 
-#define MAX_VARS 100
+#define MAX_VARS 128
 extern OBJ vars[MAX_VARS];
 
 // Code Chunks
@@ -203,6 +203,7 @@ extern int extraByteDelay;
 #define cannotUseWithBLE		50	// Cannot use this feature when board is connected to IDE via Bluetooth
 #define bad8BitBitmap			51	// Needs an 8-bit bitmap: a list containing the bitmap width and contents (a byte array)
 #define badColorPalette			52	// Needs a color palette: a list of positive 24-bit integers representing RGB values
+#define encoderNotStarted		53	// Encoder not started; pin may not support interrupts
 #define sleepSignal				255	// Not a real error; used to make current task sleep
 
 // Runtime Operations
@@ -403,6 +404,7 @@ typedef enum {
 	HIDPrims,
 	CameraPrims,
 	OneWirePrims,
+	EncoderPrims,
 	PrimitiveSetCount
 } PrimitiveSetIndex;
 
@@ -421,6 +423,7 @@ void addTFTPrims();
 void addHIDPrims();
 void addCameraPrims();
 void addOneWirePrims();
+void addEncoderPrims();
 
 // Named Primitive Support
 
