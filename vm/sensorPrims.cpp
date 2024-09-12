@@ -41,7 +41,7 @@
 #elif defined(ARDUINO_M5Stick_C2)
 	#define PIN_WIRE_SCL 33
 	#define PIN_WIRE_SDA 32
-#elif defined(HALOCODE)
+#elif defined(HALOCODE) || defined(LUWU_CYKEBOT)
 	#define PIN_WIRE_SCL 18
 	#define PIN_WIRE_SDA 19
 #elif defined(ARDUINO_M5Stack_Core_PIANO)
@@ -50,6 +50,9 @@
 #elif defined(FUTURE_LITE)|| defined(M5_CARDPUTER)|| defined(M5_DIN_METER) || defined(M5_ATOMS3LITE)
 	#define PIN_WIRE_SCL 1
 	#define PIN_WIRE_SDA 2
+#elif defined(TX_FT_BOX)
+	#define PIN_WIRE_SCL 40
+	#define PIN_WIRE_SDA 39
 #elif defined(ARDUINO_M5STACK_CORES3)
 	#define PIN_WIRE_SCL 11
 	#define PIN_WIRE_SDA 12
@@ -1463,7 +1466,36 @@ static void setAccelRange(int range) {
 	return;
 }
 
-#elif defined(ARDUINO_Labplus_mPython) //not finish yet
+#elif defined(LUWU_CYKEBOT)
+#define ICM42670_I2C_ADDRESS 0x69
+
+static void startAccelerometer() {
+	// 1600Hz 2g
+	writeI2CReg(ICM42670_I2C_ADDRESS, 0x21, 101);
+	// low power
+	writeI2CReg(ICM42670_I2C_ADDRESS, 0x1F, 2);
+	delay(2);
+	accelStarted = true;
+}
+
+static void accelreadData() {
+
+}
+static int readAcceleration(int registerID) {
+	return 0;
+}
+
+static void setAccelRange(int range) {
+	//not apply this method
+	return;
+}
+
+static int readTemperature() {
+	return -99;
+}
+
+
+#elif defined(ARDUINO_Labplus_mPython)
 static uint8 accelData[6];
 
 #if defined(MATRIXBIT) //QMI8658
@@ -1576,6 +1608,95 @@ static int readTemperature() {
 static void setAccelRange(int range) {
 	return;
 }
+
+#elif defined(TX_FT_BOX)
+  #define Wire1 Wire
+  #undef LIS3DH_ID
+  #define LIS3DH_ID 24
+
+static void setAccelRange(int range); // forward reference
+
+static int readAcceleration(int registerID) {
+	if (!accelStarted) {
+		Wire1.begin(); // use internal I2C bus
+		Wire1.setClock(400000); // i2c fast mode (seems pretty ubiquitous among i2c devices)
+
+		// turn on the accelerometer
+		Wire1.beginTransmission(LIS3DH_ID);
+		Wire1.write(0x20);
+		Wire1.write(0x77); // 400 Hz sampling rate, 10-bit resolution, enable x/y/z
+		Wire1.endTransmission();
+		delay(2);
+		setAccelRange(0); // also disables block data update
+		writeI2CReg(LIS3DH_ID, 0x1F, 0xC0); // enable temperature reporting
+		accelStarted = true;
+	}
+	Wire1.beginTransmission(LIS3DH_ID);
+	Wire1.write((0x28 + registerID) | 0x80); // address + auto-increment flag
+	int error = Wire1.endTransmission(false);
+	if (error) return 0; // error; return 0
+
+	Wire1.requestFrom(LIS3DH_ID, 2);
+	signed char highBits = Wire1.available() ? Wire1.read() : 0;
+	signed char lowBits = Wire1.available() ? Wire1.read() : 0;
+	int val =  (highBits << 2) | ((lowBits >> 6) & 3);
+	val = (200 * val) >> 9;
+	if (1 == registerID) val = -val; // invert sign for x axis
+	return val;
+}
+
+static void setAccelRange(int range) {
+	// Range is 0, 1, 2, or 3 for +/- 2, 4, 8, or 16 g.
+	// See datasheet pg. 37, CTRL_REG4.
+	Wire1.beginTransmission(LIS3DH_ID);
+	Wire1.write(0x23);
+	Wire1.write(range << 4);
+	Wire1.endTransmission();
+}
+
+static int readTemperature() {
+	// Return the temperature in Celcius
+
+	int adc = 0;
+
+	#if defined(MAKERPORT_ACCEL)
+		int degreesC = 0;
+		uint8 regValue = readI2CReg(LIS3DH_ID, 0x23);
+		writeI2CReg(LIS3DH_ID, 0x23, regValue | 0x80); // enable block data update (needed for temperature)
+		uint8 hiByte = readI2CReg(LIS3DH_ID, 0x0D);
+		uint8 lowByte = readI2CReg(LIS3DH_ID, 0x0C);
+		writeI2CReg(LIS3DH_ID, 0x23, regValue); // disable block data update
+		if (hiByte <= 127) { // positive offset
+			degreesC = hiByte + ((lowByte >= 128) ? 1 : 0); // round up
+		} else { // negative offset
+			degreesC = (hiByte - 256) + ((lowByte >= 128) ? -1 : 0); // round down
+		}
+		return  20 + degreesC; // adjusted temperature
+	#else
+		setPinMode(A9, INPUT);
+		adc = analogRead(A9);
+		return ((int) (0.116 * adc)) - 37; // linear approximation
+	#endif
+
+	// The following unused code does not seem as accurate as the linear approximation
+	// above (based on comparing the thermistor to a household digital thermometer).
+	// See https://learn.adafruit.com/thermistor/using-a-thermistor
+	// The following constants come from the NCP15XH103F03RC thermister data sheet:
+	#define SERIES_RESISTOR 10000
+	#define RESISTANCE_AT_25C 10000
+	#define B_CONSTANT 3380
+
+	if (adc < 1) adc = 1; // avoid divide by zero (although adc should never be zero)
+	float r = ((1023 * SERIES_RESISTOR) / adc) - SERIES_RESISTOR;
+
+	float steinhart = log(r / RESISTANCE_AT_25C) / B_CONSTANT;
+	steinhart += 1.0 / (25 + 273.15); // add 1/T0 (T0 is 25C in Kelvin)
+	float result = (1.0 / steinhart) - 273.15; // steinhart is 1/T; invert and convert to C
+
+	return (int) round(result);
+}
+
+
 
 #elif defined(DATABOT)
 
