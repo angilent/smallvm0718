@@ -1295,16 +1295,18 @@ if ((typeof chrome != 'undefined') &&
 		chrome.runtime.getBackgroundPage(GP_ChromebookLaunch);
 }
 
-// warn before leaving page
-
-window.onbeforeunload = function() {
-   return "Leave this page? (changes will be lost)";
-};
-
-// progressive web app service worker
-
-window.onload = function() {
-  if (('serviceWorker' in navigator) && !hasChromeFilesystem()) {
-    navigator.serviceWorker.register('sw.js');
-  }
-}
+// The following are not used by the Chromebook app:
+//
+// // warn before leaving page
+//
+// window.onbeforeunload = function() {
+//    return "Leave this page? (changes will be lost)";
+// };
+//
+// // progressive web app service worker
+//
+// window.onload = function() {
+//   if (('serviceWorker' in navigator) && !hasChromeFilesystem()) {
+//     navigator.serviceWorker.register('sw.js');
+//   }
+// }
