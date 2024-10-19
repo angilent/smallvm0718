@@ -208,6 +208,7 @@ method clicked InputSlot aHand {
 		menu = (call menuSelector this)
 		if (notNil menu) {
 		  popUpAtHand menu (page aHand)
+		  return true
 		}
 	  } else {
 		project = (project (findProjectEditor))
@@ -226,10 +227,10 @@ method clicked InputSlot aHand {
 			}
 		  }
 		  popUpAtHand menu (page aHand)
+		  return true
 		}
 	  }
     }
-	return true
   }
   return (handDownOn text aHand)
 }
