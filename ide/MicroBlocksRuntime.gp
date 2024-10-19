@@ -1348,7 +1348,7 @@ method sendStopAll SmallRuntime {
 }
 
 method startAll SmallRuntime {
-    if (or (isNil vmVersion) (vmVersion < 300)) {
+    if (and (notNil vmVersion) (vmVersion < 300)) {
         return (vmIncomptabibleWithIDE this)
     }
     sendStartAll this
