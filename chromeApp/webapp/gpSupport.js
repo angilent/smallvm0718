@@ -375,14 +375,16 @@ function handleMessage(evt) {
 			// Boardie sent us bytes. Let's add them to the serial buffer.
 			GP_serialInputBuffers.push(msg);
 		}
-	} else if (msg.startsWith('showButton ')) {
-		var btn = document.getElementById(msg.substring(11));
-		if (btn) btn.style.display = 'inline';
-	} else if (msg.startsWith('hideButton ')){
-		var btn = document.getElementById(msg.substring(11));
-		if (btn) btn.style.display = 'none';
-	} else {
-		queueGPMessage(msg);
+	} else if (typeof msg === 'string' || msg instanceof String) {
+		if (msg.startsWith('showButton ')) {
+			var btn = document.getElementById(msg.substring(11));
+			if (btn) btn.style.display = 'inline';
+		} else if (msg.startsWith('hideButton ')){
+			var btn = document.getElementById(msg.substring(11));
+			if (btn) btn.style.display = 'none';
+		} else {
+			queueGPMessage(msg);
+		}
 	}
 }
 
