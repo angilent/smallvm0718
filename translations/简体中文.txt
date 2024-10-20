@@ -1296,6 +1296,9 @@ defer display updates
 ####
 # TFT display library
 
+clear TFT display
+清除 TFT 显示屏
+
 enable TFT _
 启用 TFT _
 
@@ -1310,6 +1313,9 @@ set TFT pixel x _ y _ to _
 
 draw line on TFT from x _ y _ to x _ y _ color _
 在TFT上绘制直线从 x _ y _ 至 x _ y _ 颜色 _
+
+draw vector x _ y _ angle _ length _ color _
+在TFT上绘制矢量, x _ y _ 角度 _ 长度 _ 颜色 _
 
 draw rectangle on TFT at x _ y _ width _ height _ color _
 在TFT上绘制长方形,位置 x _ y _ 宽度 _ 高度 _ 颜色 _
@@ -1333,7 +1339,25 @@ Hello World!
 --MISSING--
 
 scale _ wrap _
-scale _ wrap _
+缩放 _ 包裹 _
+
+draw text _ on TFT at x _ y _ color _
+在TFT上绘制文本 _ 位置 x _ y _ 颜色 _
+
+scale _
+缩放 _
+
+bg color _
+背景颜色 _
+
+draw bitmap _ palette _ on TFT at x _ y _
+在TFT上制位图 _  调色板 _ 位置 x _ y _
+
+set TFT backlight _ (0-10)
+设置TFT背光 _ (0-10)
+
+gray _ %
+灰色 _ %
 
 ####
 # BMP library

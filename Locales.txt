@@ -899,6 +899,8 @@ defer display updates
 ####
 # TFT display library
 
+clear TFT display 
+
 enable TFT _
 
 TFT width
@@ -908,6 +910,8 @@ TFT height
 set TFT pixel x _ y _ to _
 
 draw line on TFT from x _ y _ to x _ y _ color _
+
+draw vector x _ y _ angle _ length _ color _
 
 draw rectangle on TFT at x _ y _ width _ height _ color _
 
@@ -924,6 +928,18 @@ write _ on TFT at x _ y _ color _
 Hello World!
 
 scale _ wrap _
+
+draw text _ on TFT at x _ y _ color _
+
+scale _
+
+bg color _
+
+draw bitmap _ palette _ on TFT at x _ y _
+
+set TFT backlight _ (0-10)
+
+gray _ %
 
 ####
 # BMP library
