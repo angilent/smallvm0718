@@ -1270,7 +1270,7 @@ static void runTask(Task *task) {
 		tmpObj = (OBJ) (ip + (*ip & 0x3FF)); // primitive name object
 		ip++; // skip second instruction word
 		arg = arg & 0xFF; // argument count
-		newPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
+		doPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
 		POP_ARGS_COMMAND();
 		DISPATCH();
 	reporterPrimitive_op:
@@ -1278,7 +1278,7 @@ static void runTask(Task *task) {
 		tmpObj = (OBJ) (ip + (*ip & 0x3FF)); // primitive name object
 		ip++; // skip second instruction word
 		arg = arg & 0xFF; // argument count
-		*(sp - arg) = newPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
+		*(sp - arg) = doPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
 		POP_ARGS_REPORTER();
 		DISPATCH();
 
