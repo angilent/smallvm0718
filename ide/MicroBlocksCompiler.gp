@@ -1120,6 +1120,12 @@ method appendDecompilerMetadata SmallCompiler aBlockOrFunction instructionList {
 	// Append metadata used by the decompiler.
 	// The function name is also used by the "call" blocks.
 
+	// default metadata fields
+	functionLibrary = ''
+	functionSpec = ''
+	varNames = ''
+	functionName = ''
+
 	// collect local variable names
 	localVarAndArgNames = (list)
 	for pair (sortedPairs localVars) {
@@ -1128,24 +1134,21 @@ method appendDecompilerMetadata SmallCompiler aBlockOrFunction instructionList {
 		}
 	}
 
-	// defaults (empty for non-functions)
-	functionName = ''
-	functionLibrary = ''
-	functionMetadata = ''
-
-	// if aBlockOrFunction is a function, collect function info strings
+	// if aBlockOrFunction is a function, set the function fields and add arg names
 	if (isClass aBlockOrFunction 'Function') {
 		project = (project (scripter (smallRuntime)))
-		functionName = (functionName aBlockOrFunction)
 		functionLibrary = (libForFunction project aBlockOrFunction)
 		if (isEmpty functionLibrary) {
-			functionMetadata = (metaInfoForFunction project aBlockOrFunction)
+			// to save space, only record the function spec if the function is not in a library
+			// this assumes that the library is a MicroBlocks library that will get added
+			// (including the spec for this function) by the decompiler
+			functionSpec = (metaInfoForFunction project aBlockOrFunction)
 		}
 		addAll localVarAndArgNames (argNames aBlockOrFunction) // add function arg names
+		functionName = (functionName aBlockOrFunction)
 	}
 
 	// create varNames string
-	varNames = ''
 	if (not (isEmpty localVarAndArgNames)) {
 		 // replace any tabs in var names with spaces so we can safely use tab as a delimiter
 		for i (count localVarAndArgNames) {
@@ -1155,8 +1158,8 @@ method appendDecompilerMetadata SmallCompiler aBlockOrFunction instructionList {
 		varNames = (joinStrings localVarAndArgNames (string 9)) // tab delimited string of var names
 	}
 
-	// add 'metadata' pseudo instruction
-	add instructionList (array 'metadata' functionName functionLibrary functionMetadata varNames)
+	// add the 'metadata' pseudo instruction
+	add instructionList (array 'metadata' functionLibrary functionSpec varNames functionName )
 }
 
 // binary code generation
@@ -1224,13 +1227,13 @@ method addBytesForInstructionTo SmallCompiler instr bytes {
 		add bytes (arg & 255)
 	} ('metadata' == op) {
 		// metadata should be the last instruction, following the literals
-		addAll bytes (toArray (toBinaryData (at instr 2))) // function name
+		addAll bytes (toArray (toBinaryData (at instr 2))) // function library
 		add bytes 0 // null terminator
-		addAll bytes (toArray (toBinaryData (at instr 3))) // function library
+		addAll bytes (toArray (toBinaryData (at instr 3))) // function spec
 		add bytes 0 // null terminator
-		addAll bytes (toArray (toBinaryData (at instr 4))) // function metadata
+		addAll bytes (toArray (toBinaryData (at instr 4))) // local var and arg names (tab delimited)
 		add bytes 0 // null terminator
-		addAll bytes (toArray (toBinaryData (at instr 5))) // local var and arg names
+		addAll bytes (toArray (toBinaryData (at instr 5))) // function name
 		add bytes 0 // null terminator
 	} else {
 		error 'Argument does not fit in 8 bits'
