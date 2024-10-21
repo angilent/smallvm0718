@@ -27,7 +27,8 @@ OBJ primBLE_ID(int argCount, OBJ *args) {
 	if (strlen(BLE_ThreeLetterID) == 3) {
 		result = newStringFromBytes(BLE_ThreeLetterID, 3);
 	} else {
-		result = newString(0);
+		const char bleNotSupported[] = "BLE not supported";
+		result = newStringFromBytes(bleNotSupported, strlen(bleNotSupported));
 	}
 	if (!result) return fail(insufficientMemoryError);
 	return result;
