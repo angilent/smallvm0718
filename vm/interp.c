@@ -363,29 +363,37 @@ static OBJ argOrDefault(OBJ *fp, int argNum, OBJ defaultValue) {
 	return *(fp - (4 + actualArgCount) + argNum); // return the desired argument
 }
 
-static int functionNameMatches(int chunkIndex, char *functionName) {
+static int functionNameMatches(int chunkIndex, char *functionName, int nameLength) {
 	// Return true if given chunk is the function with the given function name.
-	// Use the function name in the function's metadata.
+	// Use the function name from the function's metadata (the last metadata field).
 	// Scan backwards from the end of the chunk to avoid possible
 	// matches of the meta flag with offsets in instructions.
-	// Note: 248 (0xF8) is not a valid byte in UTF-8 encoding
 
-	const uint8 META_FLAG = 248;
-	char *metaData = NULL;
 	uint32 *code = (uint32 *) chunks[chunkIndex].code;
 	uint8 *chunkStart = (uint8 *) (code + PERSISTENT_HEADER_WORDS);
 	uint8 *src = chunkStart + (4 * code[1]) - 1; // start at last byte
+
+	// skip any trailing zeros in chunk data
 	while (src > chunkStart) {
-		if (META_FLAG == *src) {
-			metaData = (char *) src + 1;
+		if (*src) break; // found a non-zero byte
+		src--;
+	}
+
+	uint8 *nameEnd = src + 1; // zero terminator
+	char *nameStart = NULL;
+	while (src > chunkStart) {
+		if (!*src) { // found zero byte marking the end of the previous metadata field
+			nameStart = (char *) src + 1; // first byte of function name field
 			break;
 		}
-		src--; // scan backwards to find start of metadata
+		src--; // scan backwards to find the start of function name field
 	}
-	if (!metaData) return false; // no metadata
+	if (!nameStart) return false; // no metadata; should not happen
 
-	// return true if metaDat starts with the given function name
-	return (strstr(metaData, functionName) == metaData);
+	if (nameLength != (nameEnd - (uint8 *) nameStart)) return false; // length mismatch
+
+	// return true if function name matches
+	return (strstr(nameStart, functionName) == nameStart);
 }
 
 static int chunkIndexForFunction(char *functionName) {
@@ -394,9 +402,9 @@ static int chunkIndexForFunction(char *functionName) {
 	int nameLength = strlen(functionName);
 	for (int i = 0; i < MAX_CHUNKS; i++) {
 		int chunkType = chunks[i].chunkType;
-		if (functionHat == chunkType) {
-			if (broadcastMatches(i, functionName, nameLength)) return i;
-			if (functionNameMatches(i, functionName)) return i;
+		if ((functionHat == chunkType) &&
+			 functionNameMatches(i, functionName, nameLength)) {
+				return i;
 		}
 	}
 	return -1;
