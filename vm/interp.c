@@ -366,12 +366,10 @@ static OBJ argOrDefault(OBJ *fp, int argNum, OBJ defaultValue) {
 static int functionNameMatches(int chunkIndex, char *functionName, int nameLength) {
 	// Return true if given chunk is the function with the given function name.
 	// Use the function name from the function's metadata (the last metadata field).
-	// Scan backwards from the end of the chunk to avoid possible
-	// matches of the meta flag with offsets in instructions.
 
 	uint32 *code = (uint32 *) chunks[chunkIndex].code;
 	uint8 *chunkStart = (uint8 *) (code + PERSISTENT_HEADER_WORDS);
-	uint8 *src = chunkStart + (4 * code[1]) - 1; // start at last byte
+	uint8 *src = chunkStart + (4 * code[1]) - 1; // last byte of chunk
 
 	// skip any trailing zeros in chunk data
 	while (src > chunkStart) {
@@ -379,21 +377,15 @@ static int functionNameMatches(int chunkIndex, char *functionName, int nameLengt
 		src--;
 	}
 
-	uint8 *nameEnd = src + 1; // zero terminator
-	char *nameStart = NULL;
-	while (src > chunkStart) {
-		if (!*src) { // found zero byte marking the end of the previous metadata field
-			nameStart = (char *) src + 1; // first byte of function name field
-			break;
-		}
-		src--; // scan backwards to find the start of function name field
+	src -= nameLength;
+	if (src < chunkStart) return false;
+	if (*src != 0) return false; // *src is not the end of previous metatdata field
+
+	char *name = (char *) (src + 1);
+	for (int i = 0; i < nameLength; i++) {
+		if (*name++ != *functionName++) return false; // mismatch
 	}
-	if (!nameStart) return false; // no metadata; should not happen
-
-	if (nameLength != (nameEnd - (uint8 *) nameStart)) return false; // length mismatch
-
-	// return true if function name matches
-	return (strstr(nameStart, functionName) == nameStart);
+	return true;
 }
 
 static int chunkIndexForFunction(char *functionName) {
