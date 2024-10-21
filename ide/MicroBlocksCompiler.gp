@@ -1138,7 +1138,7 @@ method appendDecompilerMetadata SmallCompiler aBlockOrFunction instructionList {
 	if (isClass aBlockOrFunction 'Function') {
 		project = (project (scripter (smallRuntime)))
 		functionLibrary = (libForFunction project aBlockOrFunction)
-		if (isEmpty functionLibrary) {
+		if (or (isEmpty functionLibrary) (notEmbeddedLibrary this functionLibrary)) {
 			// to save space, only record the function spec if the function is not in a library
 			// this assumes that the library is a MicroBlocks library that will get added
 			// (including the spec for this function) by the decompiler
@@ -1160,6 +1160,12 @@ method appendDecompilerMetadata SmallCompiler aBlockOrFunction instructionList {
 
 	// add the 'metadata' pseudo instruction
 	add instructionList (array 'metadata' functionLibrary functionSpec varNames functionName )
+}
+
+method notEmbeddedLibrary SmallCompiler libNmae {
+	// Return true if the given library is not one of the embedded libraries.
+
+	return (isNil (fileNameForLibraryNamed (scripter (smallRuntime))))
 }
 
 // binary code generation
