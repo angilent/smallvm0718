@@ -253,10 +253,10 @@ int broadcastMatches(uint8 chunkIndex, char *msg, int byteCount) {
 	//	recvBroadcast
 	// A function with zero arguments can be also launched via a broadcast.
 
-	if ((initLocals != CMD(code[0])) ||
-		(pushLiteral != CMD(code[1])) ||
-		(recvBroadcast != CMD(code[3])))
+	if ((pushLiteral != CMD(code[1])) ||
+		(recvBroadcast != CMD(code[3]))) {
 			return false;
+	}
 	code++; // skip initLocals
 	char *s = obj2str((OBJ) (code + *(code + 1) + 1));
 	if (strlen(s) == 0) return true; // empty parameter in the receiver means "any message"
