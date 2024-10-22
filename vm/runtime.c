@@ -107,7 +107,7 @@ PrimitiveFunction findPrimitive(char *primName) {
 	return NULL;
 }
 
-OBJ newPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCount, OBJ *args) {
+OBJ doPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCount, OBJ *args) {
 	// Call a named primitive with the given primitive set index and name.
 
 	PrimEntry *entries = primSets[setIndex].entries;
@@ -126,39 +126,6 @@ OBJ newPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCo
 	return fail(primitiveNotImplemented);
 
 	return falseObj;
-}
-
-OBJ callPrimitive(int argCount, OBJ *args) {
-	// Call a named primitive. The first two arguments are the primitive set name
-	// and the primitive name, followed by the arguments to the primitive itself.
-	//
-	// Note: The overhead of named primitives on BBC micro:bit is 43 to 150 usecs or more.
-	// In contrast, the overhead for a primitive built into the interpreter dispatch loop
-	// (with one argument) ia about 17 usecs. So, named primitives should not be used for
-	// operations that may need to be done really fast (e.g. toggling a pin in a loop)
-	// but are fine for slower operations (e.g. updating the micro:bit display).
-
-	if (argCount < 2) return fail(primitiveNotImplemented);
-	char *setName = IS_TYPE(args[0], StringType) ? obj2str(args[0]) : (char *) "";
-	char *primName = IS_TYPE(args[1], StringType) ? obj2str(args[1]) : (char *) "";
-
-	for (int i = 0; i < PrimitiveSetCount; i++) {
-		if (0 == strcmp(primSets[i].setName, setName)) {
-			PrimEntry *entries = primSets[i].entries;
-			int entryCount = primSets[i].entryCount;
-			for (int j = 0; j < entryCount; j++) {
-				if (0 == strcmp(entries[j].primName, primName)) {
-					OBJ result = (entries[j].primFunc)(argCount - 2, args + 2); // call primitive
-					tempGCRoot = NULL; // clear tempGCRoot in case it was used
-					return result;
-				}
-			}
-		}
-	}
-	char s[200];
-	snprintf(s, sizeof(s), "Unknown primitive [%s:%s]", setName, primName);
-	outputString(s);
-	return fail(primitiveNotImplemented);
 }
 
 void primsInit() {
@@ -286,10 +253,10 @@ int broadcastMatches(uint8 chunkIndex, char *msg, int byteCount) {
 	//	recvBroadcast
 	// A function with zero arguments can be also launched via a broadcast.
 
-	if ((initLocals != CMD(code[0])) ||
-		(pushLiteral != CMD(code[1])) ||
-		(recvBroadcast != CMD(code[3])))
+	if ((pushLiteral != CMD(code[1])) ||
+		(recvBroadcast != CMD(code[3]))) {
 			return false;
+	}
 	code++; // skip initLocals
 	char *s = obj2str((OBJ) (code + *(code + 1) + 1));
 	if (strlen(s) == 0) return true; // empty parameter in the receiver means "any message"

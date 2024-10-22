@@ -100,50 +100,75 @@ method decompileProject MicroBlocksDecompiler {
 }
 
 method addFunctionToProject MicroBlocksDecompiler aFunc chunkID project {
-	funcName = (functionName aFunc)
-	targetLib = module
+	targetModule = (main project) // target module for the function
 
-	if ((count functionSpecInfo) >= 3) { // use function info if available
-		// set the target library for this function
-		libName = functionLibrary
-		if (libName != '') {
-			if (isNil (libraryNamed project libName)) { // create library module
-				targetLib = (newMicroBlocksModule libName)
-				if (notNil functionLibrary) {
-					setField targetLib 'moduleCategory' (categoryForLibrary this libName)
-				}
-				setVersion targetLib (array 0 0) // unknown version
-				addLibrary project targetLib
-			}
-			targetLib = (libraryNamed project libName)
+	if (functionLibrary != '') { // function is in a library
+		if (isNil (libraryNamed project functionLibrary)) {
+			// no library; try to add an embedded library with that name
+			addEmbeddedLibrary this functionLibrary project
 		}
-
-		 // create blockspec from function info
-		blockType = (at functionSpecInfo 1)
-		specString = (at functionSpecInfo 2)
-		typeString = (at functionSpecInfo 3)
-		defaults = (list)
-		spec = (blockSpecFromStrings funcName blockType specString typeString defaults)
-	} else { // no function info, so generate a blockspec
-		specString = funcName
-		typeString = ''
-		defaults = (list)
-		for argName (argNames aFunc) {
-			specString = (join specString ' _')
-			typeString = (join typeString ' auto')
+		if (isNil (libraryNamed project functionLibrary)) {
+			// still no library; create one
+			targetModule = (newMicroBlocksModule functionLibrary)
+			setVersion targetModule (array 0 0) // unknown version
+			addLibrary project targetModule
 		}
-		spec = (blockSpecFromStrings funcName ' ' specString typeString defaults)
+		targetModule = (libraryNamed project functionLibrary)
 	}
 
-	// add the function and its blockspec
-	addFunction targetLib aFunc
-	add (blockList targetLib) funcName
-	recordBlockSpec project funcName spec
+	funcName = (functionName aFunc)
+	if (isNil (at (blockSpecs project) funcName)) {
+		// No blockspec for this function yet; create and add one
+		if ((count functionSpecInfo) >= 3) { // use function info, if available
+			 // create blockspec from function info
+			blockType = (at functionSpecInfo 1)
+			specString = (at functionSpecInfo 2)
+			typeString = (at functionSpecInfo 3)
+			defaults = (list)
+			spec = (blockSpecFromStrings funcName blockType specString typeString defaults)
+		} else { // no function info, so generate a blockspec
+			specString = funcName
+			typeString = ''
+			defaults = (list)
+			for argName (argNames aFunc) {
+				specString = (join specString ' _')
+				typeString = (join typeString ' auto')
+			}
+			spec = (blockSpecFromStrings funcName ' ' specString typeString defaults)
+		}
+		recordBlockSpec project funcName spec
+	}
+
+	// add the function to the targetModule
+	addFunction targetModule aFunc // install the decompiled version of the function
+	if (not (contains (blockList targetModule) funcName)) {
+		add (blockList targetModule) funcName
+	}
 }
 
-method categoryForLibrary MicroBlocksDecompiler libName {
-	// xxx to do - return library category of built-in library if possible
-	return ''
+method addEmbeddedLibrary MicroBlocksDecompiler libName project {
+	// Try to add the embedded library with the given name.
+	// Return true if successful, false if embedded library was not found.
+
+	libFileName = (join libName '.ubl')
+	if ('Browser' == (platform)) {
+		for filePath (allFilesInDir (scripter (smallRuntime)) 'Libraries') {
+			if (endsWith filePath (substring filePath 3)) {
+				data = (readEmbeddedFile filePath)
+				addLibraryFromString project (toString data) libName filePath
+				return true
+			}
+		}
+	} else {
+		for filePath (listEmbeddedFiles) {
+			if (endsWith filePath libFileName) {
+				data = (readEmbeddedFile filePath)
+				addLibraryFromString project (toString data) libName filePath
+				return true
+			}
+		}
+	}
+	return false
 }
 
 method nameForFunction MicroBlocksDecompiler chunkID chunkData {
@@ -509,12 +534,12 @@ method readMetadata MicroBlocksDecompiler chunkData {
 	}
 	if ((count metadataStrings) < 4) { return false }
 
-	functionName = (at metadataStrings 1)
-	functionLibrary = (at metadataStrings 2)
-	functionSpecInfo = (splitWith (at metadataStrings 3) (string 9))
+	functionLibrary = (at metadataStrings 1)
+	functionSpecInfo = (splitWith (at metadataStrings 2) (string 9))
+	localAndArgNames = (splitWith (at metadataStrings 3) (string 9))
+	functionName = (at metadataStrings 4)
 
 	localCount = (cmdArg this (first opcodes))
-	localAndArgNames = (splitWith (at metadataStrings 4) (string 9))
 	localNames = (copyFromTo localAndArgNames 1 localCount)
 	argNames = (copyFromTo localAndArgNames (localCount + 1))
 
@@ -628,7 +653,6 @@ method findLoops MicroBlocksDecompiler {
 	i = 1
 	while (i <= (count opcodes)) {
 		cmd = (at opcodes i)
-// print 'cmd:' cmd
 		if (and (isOneOf (cmdOp this cmd) 'jmp' 'jmpFalse' 'decrementAndJmp' 'waitUntil')
 				((cmdArg this cmd) < 0)) {
 			// a jump instruction with a negative offset marks the end of a loop

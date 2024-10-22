@@ -41,6 +41,15 @@ mil·lisegons
 board type
 tipus de placa
 
+milliseconds since _
+mil·lisegons des de _
+
+end time _
+fins a _
+
+microseconds since _
+microsegons des de _
+
 connected to IDE
 connectat a la IDE
 
@@ -384,6 +393,9 @@ llegeix del dispositiu I2C _ a llista _
 
 i2c device _ write list _
 escriu al dispositiu I2C _ el contingut de la llista _
+
+i2c device _ exists?
+existeix el dispositiu i2c _ ?
 
 spi send _
 envia _ per SPI
@@ -1278,7 +1290,7 @@ _flip display top _
 _girar la part superior de la pantalla _
 
 make image _
---MISSING--
+construeix imatge _
 
 set pixel x _ y _ erase _
 --MISSING--
@@ -1295,6 +1307,9 @@ ajornar les actualitzacions de la pantalla
 ####
 # TFT display library
 
+clear TFT display 
+esborra pantalla TFT
+
 enable TFT _
 activa TFT _
 
@@ -1309,6 +1324,9 @@ pinta el píxel x _ y _ de color _
 
 draw line on TFT from x _ y _ to x _ y _ color _
 dibuixa línia de x _ y _ a x _ y _ color _
+
+draw vector x _ y _ angle _ length _ color _
+dibuixa vector x _ y _ angle _ llargada _ color _
 
 draw rectangle on TFT at x _ y _ width _ height _ color _
 dibuixa rectangle a x _ y _ amplada _ alçada _ color _
@@ -1334,6 +1352,24 @@ Hola, món!
 scale _ wrap _
 escala _ amb salts de línia _
 
+draw text _ on TFT at x _ y _ color _
+escriu _ a x _ y _ amb color _
+
+scale _
+escala _
+
+bg color _
+color de fons _
+
+draw bitmap _ palette _ on TFT at x _ y _
+dibuixa bitmap _ amb paleta _ a x _ y _
+
+set TFT backlight _ (0-10)
+fixa la llum de fons a _ (0-10)
+
+gray _ %
+gris _ %
+
 ####
 # BMP library
 # Can display BMP image files on a TFT display
@@ -1345,13 +1381,49 @@ image.bmp
 imatge.bmp
 
 ####
-# HSV color library
+# Color library
 
-HSV Colors
-Colors HSV
+Color Operators
+Colors
 
-RGB of hue _ saturation _ brightness _ (0-100)
-RGB amb to _ saturació _ brillantor _ (0-100)
+color r _ g _ b _ (0-255)
+color vermell _ verd _ blau _ (0-255)
+
+gray _ %
+gris _ %
+
+random color
+color a l'atzar
+
+red _
+vermell de _
+
+green _
+verd de _
+
+blue _
+blau de _
+
+color hue _ (0-360) saturation _ % brightness _ %
+color amb to _ (0-360) saturació _ % i brillantor _ %
+
+hue _
+to de _
+
+saturation _
+saturació de _
+
+brightness _
+brillantor de _
+
+_ with hue _ (0-360)
+_ amb to _ (0-360)
+
+_ with saturation _ %
+_ amb saturació _ %
+
+_ with brightness _ %
+_ amb brillantor _ %
 
 ####
 # Fractions library
@@ -3457,6 +3529,9 @@ El MicroBlocks instal·lat a la teva placa no està actualitzat
 Try to update MicroBlocks on the board?
 Vols provar d'actualitzar-lo?
 
+The firmware on the board is not compatible with this version of MicroBlocks.
+El firmware d'aquesta placa no és compatible amb aquesta versió de MicroBlocks.
+
 MicroBlocks
 MicroBlocks
 
@@ -3579,14 +3654,11 @@ no carreguis llibreries de placa automàticament
 compact code store
 compacta el codi emmagatzemat
 
-enable autoloading board libraries
-carrega llibreries de placa automàticament
+autoload board libraries
+auto-carrega llibreries de placa
 
-enable PlugShare when project empty
-activa PlugShare en projectes en blanc
-
-disable PlugShare when project empty
-desactiva PlugShare en projectes en blanc
+PlugShare when project empty
+auto-PlugShare en projectes buits
 
 hide implementation blocks
 amaga els blocs d'implementació
@@ -3600,11 +3672,11 @@ mostra els blocs d'implementació
 show blocks and variables that are internal to libraries (i.e. those whose name begins with underscore)
 mostra els blocs i variables que siguin interns a les llibreries (aquells que el nom comença amb guió baix)
 
-when plugging a board, do not automatically read its contents into the IDE even if the current project is empty
-en connectar una placa, no en llegeixis els continguts automàticament encara que el projecte actual estigui en blanc
-
 when plugging a board, automatically read its contents into the IDE if the current project is empty
-en connectar una placa, llegeix-ne els continguts automàticament si el projecte actual està en blanc
+en connectar una placa, llegeix-ne els continguts automàticament si el projecte actual és buit
+
+make the IDE darker
+enfosqueix la IDE
 
 erase flash and update firmware on ESP board
 esborra i reparticiona el firmware en placa ESP
@@ -4179,6 +4251,9 @@ Reporta els mil·lisegons des de l'última inicialització del temporitzador.
 Reset the timer.
 Inicialitza el temporitzador.
 
+Report the seconds since power up.
+Reporta els segons des que la placa s'ha engegat.
+
 Report the milliseconds since power up.
 Reporta els mil·lisegons des que la placa s'ha engegat.
 
@@ -4187,6 +4262,24 @@ Reporta els microsegons des que la placa s'ha engegat.
 
 Report the board type.
 Reporta el tipus de placa.
+
+Reports firmware version loaded on the board.
+Reporta la versió del firmware carregat a la placa.
+
+Reports the three-letter BLE ID of the board if it supports BLE.
+Reporta l'identificador BLE de tres caràcters de la placa, si suporta BLE.
+
+Reports (-o) if a BLE client is connected.
+Reporto (-o) if hi ha un client BLE connectat.
+
+Report the milliseconds since the given start milliseconds. Handles clock wrap.
+Reporta els mil·lisegons des del moment d'inici especificat.
+
+Report the microseconds since the given start microseconds. Handles clock wrap.
+Reporta els microsegons des del moment d'inici especificat.
+
+Reports (-o) if the board is connected to IDE.
+Reporta (-o) si la placa està connectada a la IDE.
 
 Report the electrical logic level on a digital pin ( (-o) or (o-) ).
 Reporta el nivell lògic elèctric en un pin digital ( (-o) o (o-) ).
@@ -4224,8 +4317,8 @@ Envia un byte (0-255) a un dispositiu SPI.
 Read a byte from an SPI device while sending a zero byte. Report the byte received.
 Llegeix un byte d'un dispositiu SPI, i envia un byte zero. Reporta el byte rebut.
 
-Set the SPI clock speed and mode.
-Fixa la velocitat del rellotge i el mode de l'SPI.
+Set the SPI clock speed, mode, channel (Raspberry Pi only), and bit order.
+Ajusta la velocitat del rellotge, mode, canal (només per a Raspberry Pi) i ordre de bits del bus SPI.
 
 Send a byte array via SPI, replacing its contents with the bytes received.
 Envia una llista de bytes per SPI, substituint els seus continguts pels bytes rebuts.
@@ -4241,6 +4334,12 @@ Reporta les dades rebudes pel port sèrie (una llista de bytes).
 
 Send a byte array to the serial port.
 Envia una llista de bytes pel port sèrie.
+
+Send a byte array to the serial port, starting at the given byte.
+Envia una llista de bytes pel port sèrie, començant pel byte especificat.
+
+Write a byte to the pin at the specified baud rate.
+Envia un byte al pin amb la taxa de bauds especificada.
 
 Run when the board powers up or when the IDE start button is clicked.
 Executa quan la placa s'engegui o en clicar al botó d'inici de l'editor.
@@ -4269,14 +4368,17 @@ Espera fins que la condició sigui (-o) .
 Return (report) the given value from a function or script.
 Retorna (reporta) el valor especificat des d'una funció o programa.
 
-Run when the given message is broadcast.
-Executa quan s'emeti el missatge especificat.
+Run when the given message is received as a broadcast.
+Executa quan es rebi el missatge especificat.
 
 Broadcast the given message.
 Emet el missatge especificat.
 
 Do nothing. Used to add notes and documentation.
 No fa res. S'utilitza per afegir notes i documentació.
+
+Report a list containing the given range of numbers (with optional increment). Useful in "for" loops.
+--MISSING--
 
 Repeat the enclosed blocks with the variable set to the current iteration number or item.
 Repeteix l'execució dels blocs que conté, fixant la variable a l'element o número de l'interval corresponent en cada iteració.
@@ -4295,6 +4397,9 @@ Espera el nombre de microsegons especificat.
 
 Report the last broadcast message received.
 Reporta l'últim missatge emès i rebut.
+
+Report the given argument or defaultValue if the argument was not supplied by the caller.
+--MISSING--
 
 Call the function with the given name and optional parameter list.
 Executa la funció amb el nom especificat amb la llista de paràmetres opcional proporcionada.
@@ -4361,6 +4466,18 @@ Reporta (-o) si algun dels dos valors és (-o).
 
 Report (-o) if first input is a value of the given data type.
 Reporta (-o) si la primera casella té un valor del tipus especificat.
+
+Convert a value to the given data type.
+Converteix un valor al tipus de dades especificat.
+
+If the condition is (-o) report the first alternative otherwise report the second alternative.
+Si la condició és (-o) reporta la primera alternativa, si no, reporta la segona alternativa.
+
+Map a value in the "from" range to the corresponding value in the "to" range.
+--MISSING--
+
+sqrt _
+arrel quadrada de _
 
 Report the numerical value of a hexadecimal string (range: -0x1FFFFFFF to 0x1FFFFFFF)
 Retorna el valor numèric decimal d'una cadena de text hexadecimal (rang: -0x1FFFFFFF a 0x1FFFFFFF)

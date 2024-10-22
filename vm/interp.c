@@ -363,29 +363,29 @@ static OBJ argOrDefault(OBJ *fp, int argNum, OBJ defaultValue) {
 	return *(fp - (4 + actualArgCount) + argNum); // return the desired argument
 }
 
-static int functionNameMatches(int chunkIndex, char *functionName) {
+static int functionNameMatches(int chunkIndex, char *functionName, int nameLength) {
 	// Return true if given chunk is the function with the given function name.
-	// Use the function name in the function's metadata.
-	// Scan backwards from the end of the chunk to avoid possible
-	// matches of the meta flag with offsets in instructions.
-	// Note: 248 (0xF8) is not a valid byte in UTF-8 encoding
+	// Use the function name from the function's metadata (the last metadata field).
 
-	const uint8 META_FLAG = 248;
-	char *metaData = NULL;
 	uint32 *code = (uint32 *) chunks[chunkIndex].code;
 	uint8 *chunkStart = (uint8 *) (code + PERSISTENT_HEADER_WORDS);
-	uint8 *src = chunkStart + (4 * code[1]) - 1; // start at last byte
-	while (src > chunkStart) {
-		if (META_FLAG == *src) {
-			metaData = (char *) src + 1;
-			break;
-		}
-		src--; // scan backwards to find start of metadata
-	}
-	if (!metaData) return false; // no metadata
+	uint8 *src = chunkStart + (4 * code[1]) - 1; // last byte of chunk
 
-	// return true if metaDat starts with the given function name
-	return (strstr(metaData, functionName) == metaData);
+	// skip any trailing zeros in chunk data
+	while (src > chunkStart) {
+		if (*src) break; // found a non-zero byte
+		src--;
+	}
+
+	src -= nameLength;
+	if (src < chunkStart) return false;
+	if (*src != 0) return false; // *src is not the end of previous metatdata field
+
+	char *name = (char *) (src + 1);
+	for (int i = 0; i < nameLength; i++) {
+		if (*name++ != *functionName++) return false; // mismatch
+	}
+	return true;
 }
 
 static int chunkIndexForFunction(char *functionName) {
@@ -394,9 +394,9 @@ static int chunkIndexForFunction(char *functionName) {
 	int nameLength = strlen(functionName);
 	for (int i = 0; i < MAX_CHUNKS; i++) {
 		int chunkType = chunks[i].chunkType;
-		if (functionHat == chunkType) {
-			if (broadcastMatches(i, functionName, nameLength)) return i;
-			if (functionNameMatches(i, functionName)) return i;
+		if ((functionHat == chunkType) &&
+			 functionNameMatches(i, functionName, nameLength)) {
+				return i;
 		}
 	}
 	return -1;
@@ -1270,7 +1270,7 @@ static void runTask(Task *task) {
 		tmpObj = (OBJ) (ip + (*ip & 0x3FF)); // primitive name object
 		ip++; // skip second instruction word
 		arg = arg & 0xFF; // argument count
-		newPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
+		doPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
 		POP_ARGS_COMMAND();
 		DISPATCH();
 	reporterPrimitive_op:
@@ -1278,7 +1278,7 @@ static void runTask(Task *task) {
 		tmpObj = (OBJ) (ip + (*ip & 0x3FF)); // primitive name object
 		ip++; // skip second instruction word
 		arg = arg & 0xFF; // argument count
-		*(sp - arg) = newPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
+		*(sp - arg) = doPrimitiveCall(tmp, obj2str(tmpObj), arg, sp - arg);
 		POP_ARGS_REPORTER();
 		DISPATCH();
 

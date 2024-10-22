@@ -193,7 +193,7 @@ method libForFunction MicroBlocksProject aFunc {
 
 method metaInfoForFunction MicroBlocksProject aFunc {
 	// Return a tab-delimited block spec string for the given function:
-	//	blockType funcName specString argTypes
+	//	blockType specString argTypes
 
 	funcName = (functionName aFunc)
 	spec = (at blockSpecs funcName)
@@ -209,14 +209,18 @@ method metaInfoForFunction MicroBlocksProject aFunc {
 	}
 
 	parts = (toList (argList (first (parse (specDefinitionString spec)))))
+	// parts is a list of: blockType functionName specString argTypes [defaultValues...]
 	if ((count parts) < 4) {
 		add parts '' // add empty arg types string for a parmeterless function
 	} else {
 		parts = (copyFromTo parts 1 4) // remove any default arg values
 	}
-
+	// parts is now a list of: blockType functionName specString argTypes
 	removeAt parts 2 // remove the function name
-	return (joinStrings parts (string 9)) // join fields with tab delimiter
+	// parts is now a list of: blockType specString argTypes
+
+	// join the blockType, specString, and argType strings with tab delimiters
+	return (joinStrings parts (string 9))
 }
 
 // Variables

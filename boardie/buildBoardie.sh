@@ -2,7 +2,7 @@
 # Build Boardie: MicroBlocks VM that runs in a web browser
 
 emcc -std=gnu99 -Wall -O3 \
-	-Wno-shift-negative-value -Wno-format \
+	-Wno-shift-negative-value -Wno-format -Wno-unused-function \
 	-D EMSCRIPTEN \
 	-D GNUBLOCKS \
 	-s TOTAL_MEMORY=268435456 \
