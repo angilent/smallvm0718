@@ -29,6 +29,12 @@ milliseconds
 
 board type
 
+milliseconds since _
+
+end time _
+
+microseconds since _
+
 connected to IDE
 
 Pins
@@ -260,6 +266,8 @@ i2c set device _ register _ to _
 i2c device _ read list _
 
 i2c device _ write list _
+
+i2c device _ exists?
 
 spi send _
 
@@ -877,6 +885,8 @@ defer display updates
 ####
 # TFT display library
 
+clear TFT display 
+
 enable TFT _
 
 TFT width
@@ -886,6 +896,8 @@ TFT height
 set TFT pixel x _ y _ to _
 
 draw line on TFT from x _ y _ to x _ y _ color _
+
+draw vector x _ y _ angle _ length _ color _
 
 draw rectangle on TFT at x _ y _ width _ height _ color _
 
@@ -902,6 +914,18 @@ write _ on TFT at x _ y _ color _
 Hello World!
 
 scale _ wrap _
+
+draw text _ on TFT at x _ y _ color _
+
+scale _
+
+bg color _
+
+draw bitmap _ palette _ on TFT at x _ y _
+
+set TFT backlight _ (0-10)
+
+gray _ %
 
 ####
 # BMP library
@@ -2380,6 +2404,8 @@ The MicroBlocks in your board is not current
 
 Try to update MicroBlocks on the board?
 
+The firmware on the board is not compatible with this version of MicroBlocks.
+
 MicroBlocks
 
 Stop
@@ -2462,11 +2488,9 @@ disable autoloading board libraries
 
 compact code store
 
-enable autoloading board libraries
+autoload board libraries
 
-enable PlugShare when project empty
-
-disable PlugShare when project empty
+PlugShare when project empty
 
 hide implementation blocks
 
@@ -2476,9 +2500,9 @@ show implementation blocks
 
 show blocks and variables that are internal to libraries (i.e. those whose name begins with underscore)
 
-when plugging a board, do not automatically read its contents into the IDE even if the current project is empty
+when plugging a board, automatically read its contents into the IDE even if the current project is empty
 
-when plugging a board, automatically read its contents into the IDE if the current project is empty
+make the IDE darker
 
 erase flash and update firmware on ESP board
 
@@ -2866,11 +2890,25 @@ Report the milliseconds since the timer was last reset.
 
 Reset the timer.
 
+Report the seconds since power up.
+
 Report the milliseconds since power up.
 
 Report the microseconds since power up.
 
 Report the board type.
+
+Reports firmware version loaded on the board.
+
+Reports the three-letter BLE ID of the board if it supports BLE.
+
+Reports (-o) if a BLE client is connected.
+
+Report the milliseconds since the given start milliseconds. Handles clock wrap.
+
+Report the microseconds since the given start microseconds. Handles clock wrap.
+
+Reports (-o) if the board is connected to IDE.
 
 Report the electrical logic level on a digital pin ( (-o) or (o-) ).
 
@@ -2896,7 +2934,7 @@ Send a byte (0-255) to an SPI device.
 
 Read a byte from an SPI device while sending a zero byte. Report the byte received.
 
-Set the SPI clock speed and mode.
+Set the SPI clock speed, mode, channel (Raspberry Pi only), and bit order.
 
 Send a byte array via SPI, replacing its contents with the bytes received.
 
@@ -2907,6 +2945,10 @@ Close the serial port.
 Report data received from the serial port (a byte array).
 
 Send a byte array to the serial port.
+
+Send a byte array to the serial port, starting at the given byte.
+
+Write a byte to the pin at the specified baud rate.
 
 Run when the board powers up or when the IDE start button is clicked.
 
@@ -2926,11 +2968,13 @@ Wait until the condition becomes (-o) .
 
 Return (report) the given value from a function or script.
 
-Run when the given message is broadcast.
+Run when the given message is received as a broadcast.
 
 Broadcast the given message.
 
 Do nothing. Used to add notes and documentation.
+
+Report a list containing the given range of numbers (with optional increment). Useful in "for" loops.
 
 Repeat the enclosed blocks with the variable set to the current iteration number or item.
 
@@ -2943,6 +2987,8 @@ Stop all tasks except this one.
 Wait the given number of microseconds.
 
 Report the last broadcast message received.
+
+Report the given argument or defaultValue if the argument was not supplied by the caller.
 
 Call the function with the given name and optional parameter list.
 
@@ -2987,6 +3033,14 @@ Report (-o) if both values are (-o)
 Report (-o) if either value is (-o)
 
 Report (-o) if first input is a value of the given data type.
+
+Convert a value to the given data type.
+
+If the condition is (-o) report the first alternative otherwise report the second alternative.
+
+Map a value in the "from" range to the corresponding value in the "to" range.
+
+sqrt _
 
 Report the numerical value of a hexadecimal string (range: -0x1FFFFFFF to 0x1FFFFFFF)
 

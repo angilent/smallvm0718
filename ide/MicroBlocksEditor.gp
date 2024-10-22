@@ -654,6 +654,16 @@ method updateConnectionName MicroBlocksEditor aString {
 	fixTopBarLayout this
 }
 
+method clicked MicroBlocksEditor aHand {
+    // Clicking on connection name shows connection menu.
+    // xxx Workaround -- The connection name should really be should in
+    // a widget that highlights itself on mouse-over.
+
+    if (containsPoint (bounds (morph connectionName)) (x aHand) (y aHand)) {
+        connectToBoard this
+    }
+}
+
 // browser support
 
 method checkForBrowserResize MicroBlocksEditor {

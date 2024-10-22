@@ -79,6 +79,12 @@ method drawOn Slider ctx {
 		sliderRect = (rect ((left morph) + offset) ((top morph) + padding) sliderSize thickness)
 	} (orientation == 'vertical') {
 		sliderSize = (* ((height (bounds morph)) / (max ceiling 1)) scale 150)
+		if (isClass (handler (owner morph)) 'ColorPicker') {
+			// xxx This a quick work around. The 'update' method should compute the slider size
+			// based on the ratio of visible content to total content. There should also be
+			// a mechanism to have a fixed slider size.
+			sliderSize = (20 * scale)
+		}
 		sliderRange = ((height morph) - sliderSize)
 		offset = (toInteger (frac * sliderRange))
 		sliderRect = (rect ((left morph) + padding) ((top morph) + offset) thickness sliderSize)

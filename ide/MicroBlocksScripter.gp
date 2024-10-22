@@ -1287,7 +1287,7 @@ method importEmbeddedLibrary MicroBlocksScripter libName {
 		libFileName = (join libName '.ubl')
 		for filePath (allFilesInDir this 'Libraries') {
 			if (endsWith filePath libFileName) {
-				importLibraryFromFile this filePath
+				importLibraryFromFile this filePath nil false
 				return
 			}
 		}
@@ -1295,23 +1295,24 @@ method importEmbeddedLibrary MicroBlocksScripter libName {
 	}
 	for filePath (listEmbeddedFiles) {
 		if (endsWith filePath (join libName '.ubl')) {
-			importLibraryFromFile this (join '//' filePath)
+			importLibraryFromFile this (join '//' filePath) nil false
 			return
 		}
 	}
 }
 
-method importLibraryFromFile MicroBlocksScripter fileName data {
+method importLibraryFromFile MicroBlocksScripter fileName data updateLastLibFolder {
   // Import a library with the given file path. If data is not nil, it came from
   // a browser upload or file drop. Use it rather than attempting to read the file.
 
+  if (isNil updateLastLibFolder) { updateLastLibFolder = true }
   if (isNil data) {
 	if (beginsWith fileName '//') {
 	  data = (readEmbeddedFile (substring fileName 3))
-      lastLibraryFolder = 'Libraries'
+      if updateLastLibFolder { lastLibraryFolder = 'Libraries' }
 	} else {
 	  data = (readFile fileName)
-      lastLibraryFolder = (directoryPart fileName)
+      if updateLastLibFolder { lastLibraryFolder = (directoryPart fileName) }
 	}
 	if (isNil data) { return } // could not read file
   }
