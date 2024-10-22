@@ -154,6 +154,22 @@ void hardwareInit() {
         WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
 		cocubeSensorInit();
 	#endif
+	#if defined(TX_FT_BOX)
+		pinMode(37, OUTPUT);
+		pinMode(33, OUTPUT);
+		pinMode(34, OUTPUT);
+		pinMode(35, OUTPUT);
+		digitalWrite(37, LOW);
+		digitalWrite(33, HIGH);
+		digitalWrite(34, HIGH);
+		digitalWrite(35, HIGH);
+		delay(200);
+		digitalWrite(37, HIGH);
+		delay(200);
+		digitalWrite(37, LOW);
+		delay(400);
+		digitalWrite(37, HIGH);
+	#endif
 }
 
 // General Purpose I/O Pins
@@ -756,6 +772,24 @@ void hardwareInit() {
 		1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
 		1, 0, 0, 0, 1, 0, 0, 0, 1, 1,
 		1, 1, 0, 0, 0, 0, 0, 1, 1, 0};
+
+#elif defined(LUWU_CYKEBOT)
+	#define BOARD_TYPE "CykeBot"
+	#define DIGITAL_PINS 40
+	#define ANALOG_PINS 16
+	#define TOTAL_PINS 40
+	static const int analogPin[] = {};
+	#define PIN_LED -1
+	#define PIN_BUTTON_A 35
+	#define PIN_BUTTON_B 34
+	#define DEFAULT_TONE_PIN 4
+	#undef BUTTON_PRESSED
+	#define BUTTON_PRESSED HIGH
+	static const char reservedPin[TOTAL_PINS] = {
+		0, 1, 0, 1, 0, 0, 1, 1, 1, 1,
+		1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 0, 0, 0, 1, 0, 0, 0, 1, 1,
+		1, 1, 0, 0, 0, 0, 0, 1, 1, 0};
 		
 #elif defined(M5STAMP)
 	#define BOARD_TYPE "M5STAMP"
@@ -838,6 +872,30 @@ void hardwareInit() {
 		1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
 		0, 0, 0, 1, 1, 0, 0, 0, 0};
 
+#elif defined(TX_FT_BOX)
+	#define BOARD_TYPE "TX_FT_BOX"
+	#define DIGITAL_PINS 49
+	#define ANALOG_PINS 20
+	#define TOTAL_PINS 49
+	static const int analogPin[] = {};
+	#define PIN_LED -1
+	#define PIN_BUTTON_A 21
+	#define PIN_BUTTON_B 0
+	#define DEFAULT_TONE_PIN 26
+	// #undef BUTTON_PRESSED
+	// #define BUTTON_PRESSED HIGH
+	// See https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html
+	// strapping pins 0 (Boot), 3 (JTAG), 45 (VSPI), 46 (LOG)
+	// SPI (26-32); also 33-37 on boards with Octal SPI Flash PSRAM
+	// USB pins: 19 (USB D-), 20 (USB D+)
+	// also possibly: 39-42 (JTAG pins)
+	static const char reservedPin[TOTAL_PINS] = {
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 1, 1, 1, 1, 0, 1, 1, 1,
+		1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 1, 1, 0, 0, 0, 0};
+
 #elif defined(M5_ATOMS3LITE)
 	#define BOARD_TYPE "M5-AtomS3Lite"
 	#define DIGITAL_PINS 49
@@ -845,7 +903,23 @@ void hardwareInit() {
 	#define TOTAL_PINS 49
 	static const int analogPin[] = {};
 	#define PIN_LED 35
-	#define PIN_BUTTON_A 42
+	#define PIN_BUTTON_A 41
+
+	static const char reservedPin[TOTAL_PINS] = {
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+		0, 0, 0, 1, 1, 0, 0, 0, 0};
+
+#elif defined(M5_ATOMS3)
+	#define BOARD_TYPE "M5-AtomS3"
+	#define DIGITAL_PINS 49
+	#define ANALOG_PINS 20
+	#define TOTAL_PINS 49
+	static const int analogPin[] = {};
+	#define PIN_LED -1
+	#define PIN_BUTTON_A 41
 
 	static const char reservedPin[TOTAL_PINS] = {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1697,7 +1771,7 @@ void primSetUserLED(OBJ *args) {
 		}
 	#elif defined(ARDUINO_CITILAB_ED1) || defined(ARDUINO_M5Stack_Core_ESP32) || defined(ARDUINO_M5STACK_FIRE) || \
 		defined(ARDUINO_M5STACK_Core2) || defined(TTGO_DISPLAY) || defined(M5_CARDPUTER) || \
-		defined(FUTURE_LITE) || defined(COCUBE)
+		defined(FUTURE_LITE) || defined(COCUBE) || defined(XESGAME)
 			tftSetHugePixel(3, 1, (trueObj == args[0]));
 	#else
 		if (PIN_LED < 0) return; // board does not have a user LED
@@ -2530,10 +2604,13 @@ static OBJ __not_in_flash_func(primSoftwareSerialWriteByte)(int argCount, OBJ *a
 
 // Experimental RF Square Wave Generator (nRF51 and nRF52 only)
 
-#if (defined(NRF51) || defined(NRF52)) && !defined(USE_NIMBLE)
+#if (defined(NRF51) || defined(NRF52))
+
+// Note: NimBLE uses PPI channels CH4, CH5 and optionally CH17, CH18, CH19
+// so don't mess with those. (See ble_phy.c in NimBLE source code.)
 
 static void stopRF() {
-	NRF_PPI->CHEN = 0;
+	NRF_PPI->CHENCLR = PPI_CHENSET_CH0_Msk;
 	NRF_GPIOTE->CONFIG[0] = 0;
 }
 

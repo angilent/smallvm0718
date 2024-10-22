@@ -107,7 +107,7 @@ PrimitiveFunction findPrimitive(char *primName) {
 	return NULL;
 }
 
-OBJ newPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCount, OBJ *args) {
+OBJ doPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCount, OBJ *args) {
 	// Call a named primitive with the given primitive set index and name.
 
 	PrimEntry *entries = primSets[setIndex].entries;
@@ -126,39 +126,6 @@ OBJ newPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCo
 	return fail(primitiveNotImplemented);
 
 	return falseObj;
-}
-
-OBJ callPrimitive(int argCount, OBJ *args) {
-	// Call a named primitive. The first two arguments are the primitive set name
-	// and the primitive name, followed by the arguments to the primitive itself.
-	//
-	// Note: The overhead of named primitives on BBC micro:bit is 43 to 150 usecs or more.
-	// In contrast, the overhead for a primitive built into the interpreter dispatch loop
-	// (with one argument) ia about 17 usecs. So, named primitives should not be used for
-	// operations that may need to be done really fast (e.g. toggling a pin in a loop)
-	// but are fine for slower operations (e.g. updating the micro:bit display).
-
-	if (argCount < 2) return fail(primitiveNotImplemented);
-	char *setName = IS_TYPE(args[0], StringType) ? obj2str(args[0]) : (char *) "";
-	char *primName = IS_TYPE(args[1], StringType) ? obj2str(args[1]) : (char *) "";
-
-	for (int i = 0; i < PrimitiveSetCount; i++) {
-		if (0 == strcmp(primSets[i].setName, setName)) {
-			PrimEntry *entries = primSets[i].entries;
-			int entryCount = primSets[i].entryCount;
-			for (int j = 0; j < entryCount; j++) {
-				if (0 == strcmp(entries[j].primName, primName)) {
-					OBJ result = (entries[j].primFunc)(argCount - 2, args + 2); // call primitive
-					tempGCRoot = NULL; // clear tempGCRoot in case it was used
-					return result;
-				}
-			}
-		}
-	}
-	char s[200];
-	snprintf(s, sizeof(s), "Unknown primitive [%s:%s]", setName, primName);
-	outputString(s);
-	return fail(primitiveNotImplemented);
 }
 
 void primsInit() {
@@ -211,7 +178,7 @@ void startTaskForChunk(uint8 chunkIndex) {
 	tasks[i].taskChunkIndex = chunkIndex;
 	tasks[i].currentChunkIndex = chunkIndex;
 	tasks[i].code = chunks[chunkIndex].code;
-	tasks[i].ip = PERSISTENT_HEADER_WORDS; // relative to start of code
+	tasks[i].ip = 4; // offset is 4 short words (8 bytes) relative to start of the code chunk
 	tasks[i].sp = 0; // relative to start of stack
 	tasks[i].fp = 0; // 0 means "not in a function call"
 	if (i >= taskCount) taskCount = i + 1;
@@ -273,24 +240,25 @@ void stopAllTasksButThis(Task *thisTask) {
 
 // Selected Opcodes (see MicroBlocksCompiler.gp for complete set)
 
-#define pushLiteral 4
-#define recvBroadcast 25
-#define initLocals 28
+#define pushLiteral 5
+#define initLocals 9
+#define recvBroadcast 41
 
 int broadcastMatches(uint8 chunkIndex, char *msg, int byteCount) {
-	uint32 *code = (uint32 *) chunks[chunkIndex].code + PERSISTENT_HEADER_WORDS;
+	int16 *code = (int16 *) (chunks[chunkIndex].code + PERSISTENT_HEADER_WORDS);
 	// First three instructions of a broadcast hat should be:
 	//	initLocals
 	//	pushLiteral
+	//	(data: literal offset)
 	//	recvBroadcast
 	// A function with zero arguments can be also launched via a broadcast.
-	if ((initLocals != CMD(code[0])) ||
-		(pushLiteral != CMD(code[1])) ||
-		(recvBroadcast != CMD(code[2])))
-			return false;
 
+	if ((pushLiteral != CMD(code[1])) ||
+		(recvBroadcast != CMD(code[3]))) {
+			return false;
+	}
 	code++; // skip initLocals
-	char *s = obj2str((OBJ) code + ARG(*code) + 1);
+	char *s = obj2str((OBJ) (code + *(code + 1) + 1));
 	if (strlen(s) == 0) return true; // empty parameter in the receiver means "any message"
 	if (strlen(s) != byteCount) return false;
 	for (int i = 0; i < byteCount; i++) {
@@ -925,7 +893,7 @@ static void sendCodeChunk(int chunkID, int chunkType, int chunkBytes, char *chun
 	int msgSize = 1 + chunkBytes;
 	waitForOutbufBytes(5 + msgSize);
 	queueByte(251);
-	queueByte(chunkCodeMsg);
+	queueByte(chunkCode16Msg);
 	queueByte(chunkID);
 	queueByte(msgSize & 0xFF); // low byte of size
 	queueByte((msgSize >> 8) & 0xFF); // high byte of size
@@ -1105,6 +1073,7 @@ static void processShortMessage() {
 		sendPingNow(chunkIndex); // send a ping to acknowledge
 		break;
 	case startAllMsg:
+		if (1 != chunkIndex) break; // ignore msg from 32-bit IDE
 		startAll();
 		break;
 	case stopAllMsg:
@@ -1119,6 +1088,7 @@ static void processShortMessage() {
 		sendVarNames();
 		break;
 	case clearVarsMsg:
+		if (1 != chunkIndex) break; // ignore msg from 32-bit IDE
 		clearAllVariables();
 		memClear();
 		break;
@@ -1126,6 +1096,7 @@ static void processShortMessage() {
 		sendChunkCRC(chunkIndex);
 		break;
 	case getAllCRCsMsg:
+		if (1 != chunkIndex) break; // ignore msg from 32-bit IDE
 		sendPingNow(chunkIndex); // send a ping to acknowledge receipt
 		sendAllCRCs();
 		break;
@@ -1133,10 +1104,14 @@ static void processShortMessage() {
 		sendVersionString();
 		break;
 	case getAllCodeMsg:
+		if (1 != chunkIndex) break; // ignore msg from 32-bit IDE
 		sendPingNow(chunkIndex); // send a ping to acknowledge receipt
-		sendAllCode();
+		if (chunkIndex == 1) { // requested by 16-bit IDE
+			sendAllCode();
+		}
 		break;
 	case deleteAllCodeMsg:
+		if (1 != chunkIndex) break; // ignore msg from 32-bit IDE
 		deleteAllChunks();
 		memClear();
 		primMBDisplayOff(0, NULL);
@@ -1183,7 +1158,7 @@ static void processLongMessage() {
 	int chunkIndex = rcvBuf[2];
 	int bodyBytes = msgLength - 1; // subtract terminator byte
 	switch (cmd) {
-	case chunkCodeMsg:
+	case chunkCode16Msg: // code chunk from 16-bit IDE
 		sendPingNow(chunkIndex); // send a ping to acknowledge receipt
 		storeCodeChunk(chunkIndex, bodyBytes, &rcvBuf[5]);
 		sendChunkCRC(chunkIndex);

@@ -1,5 +1,5 @@
 # MicroBlocks translation file
-# Last updated: March 14 2023
+# Last updated: October 03 2024
 
 #########################
 # Blocks and categories #
@@ -28,6 +28,12 @@ microseconds
 milliseconds
 
 board type
+
+milliseconds since _
+
+end time _
+
+microseconds since _
 
 connected to IDE
 
@@ -138,6 +144,8 @@ or _
 _ is a _
 
 convert _ to _
+
+if _ then _ else _
 
 boolean
 
@@ -258,6 +266,8 @@ i2c set device _ register _ to _
 i2c device _ read list _
 
 i2c device _ write list _
+
+i2c device _ exists?
 
 spi send _
 
@@ -602,7 +612,7 @@ Alt / ⌥
 
 Logo / ⌘
 
-AltGr 
+AltGr
 
 enter
 
@@ -754,7 +764,7 @@ display character _
 
 # Image names for the "display image" block
 
-heart 
+heart
 
 small heart
 
@@ -824,11 +834,11 @@ left triangle
 
 chess board
 
-diamond 
+diamond
 
 small diamond
 
-square 
+square
 
 small square
 
@@ -875,6 +885,8 @@ defer display updates
 ####
 # TFT display library
 
+clear TFT display 
+
 enable TFT _
 
 TFT width
@@ -884,6 +896,8 @@ TFT height
 set TFT pixel x _ y _ to _
 
 draw line on TFT from x _ y _ to x _ y _ color _
+
+draw vector x _ y _ angle _ length _ color _
 
 draw rectangle on TFT at x _ y _ width _ height _ color _
 
@@ -901,6 +915,18 @@ Hello World!
 
 scale _ wrap _
 
+draw text _ on TFT at x _ y _ color _
+
+scale _
+
+bg color _
+
+draw bitmap _ palette _ on TFT at x _ y _
+
+set TFT backlight _ (0-10)
+
+gray _ %
+
 ####
 # BMP library
 # Can display BMP image files on a TFT display
@@ -910,11 +936,35 @@ display BMP file _ at x _ y _
 image.bmp
 
 ####
-# HSV color library
+# Color library
 
-HSV Colors
+Color Operators
 
-RGB of hue _ saturation _ brightness _ (0-100)
+color r _ g _ b _ (0-255)
+
+gray _ %
+
+random color
+
+red _
+
+green _
+
+blue _
+
+color hue _ (0-360) saturation _ % brightness _ %
+
+hue _
+
+saturation _
+
+brightness _
+
+_ with hue _ (0-360)
+
+_ with saturation _ %
+
+_ with brightness _ %
 
 ####
 # Fractions library
@@ -1084,15 +1134,15 @@ Chinese Cymbal
 
 Ride Bell
 
-Tambourine 
+Tambourine
 
 Splash Cymbal
 
-Cowbell 
+Cowbell
 
 Crash Cymbal 2
 
-Vibraslap 
+Vibraslap
 
 Ride Cymbal 2
 
@@ -1116,7 +1166,7 @@ Low Agogo
 
 Cabasa
 
-Maracas 
+Maracas
 
 Short Whistle
 
@@ -1126,7 +1176,7 @@ Short Guiro
 
 Long Guiro
 
-Claves 
+Claves
 
 Hi Wood Block
 
@@ -1142,7 +1192,7 @@ Open Triangle
 
 # General MIDI instrument categories
 
-piano 
+piano
 
 chromatic percussion
 
@@ -1160,7 +1210,7 @@ brass
 
 reed
 
-pipe 
+pipe
 
 synth lead
 
@@ -1172,7 +1222,7 @@ ethnic
 
 percussive
 
-SFX 
+SFX
 
 # General MIDI drum sets
 
@@ -1182,7 +1232,7 @@ room
 
 power
 
-electronic 
+electronic
 
 TR-808
 
@@ -1192,7 +1242,7 @@ brush
 
 orchestra
 
-SFX 
+SFX
 
 CM-64/CM-32L
 
@@ -1202,7 +1252,7 @@ bank select 1
 
 bank select 2
 
-modulation 
+modulation
 
 portamento time
 
@@ -1220,13 +1270,13 @@ sostenuto
 
 soft
 
-resonance 
+resonance
 
 release time
 
 attack time
 
-cutoff 
+cutoff
 
 decay time
 
@@ -1252,7 +1302,11 @@ set MIDI note _ to _ on channel _ volume _
 
 note _ octave _ to MIDI key
 
+select MIDI instrument _ number _ for channel _
+
 select MIDI instrument _ for channel _
+
+variation _
 
 instrument _ number _
 
@@ -1300,7 +1354,7 @@ locrian
 
 major
 
-minor 
+minor
 
 # chord types
 
@@ -1314,13 +1368,13 @@ major 7th
 
 minor 7th
 
-Maj7 
+Maj7
 
 # sound destinations for arpeggiate block
 
 MIDI channel
 
-tone pin 
+tone pin
 
 # library blocks
 
@@ -1627,7 +1681,7 @@ TFT touch pressure
 
 HTTP client
 
-_ data _ to http܃// _
+_ data _ to http #SVG#colon-double-slash _
 
 MicroBlocks is fun
 
@@ -1761,6 +1815,90 @@ MiKe rotate lights by _
 MiKe digital D8 to _
 
 ####
+# Shield:bit
+
+s꞉b LEDs off
+
+s꞉b LEDs to _
+
+s꞉b LED _ (1-4) to _
+
+s꞉b audio output to shield _
+
+s꞉b stop _
+
+s꞉b turn 180 servo S- _ (1-8) to angle _
+
+s꞉b turn 360 servo S- _ (1-8) _ at _ %
+
+s꞉b turn DC M- _ (1-4) motor _ at _ %
+
+s꞉b turn Stepper- _ (1-2) motor _ for _ _
+
+s꞉b set pin S- _ (1-8) to _ %
+
+sb_DC/Stepper_motors
+
+sb_servomotors
+
+sb_all_motors
+
+turns
+
+degrees
+
+####
+# micro:STEAMakers
+
+m꞉s display #BR# _ _ _ _ _ #BR# _ _ _ _ _ #BR# _ _ _ _ _ #BR# _ _ _ _ _ #BR# _ _ _ _ _
+
+m꞉s display #BR# _ #BR# with color _
+
+m꞉s display image _ with color _
+
+m꞉s clear display
+
+m꞉s scale brightness to _ %
+
+m꞉s plot x _ y _ with _
+
+m꞉s unplot x _ y _
+
+m꞉s display character _ with _
+
+m꞉s scroll text _ with color _ 
+
+m꞉s stop scrolling
+
+start micro꞉STEAMakers audio
+
+m꞉s button _ ?
+
+m꞉s touching ?
+
+m꞉s light %
+
+m꞉s sound %
+
+m꞉s temperature ºC
+
+m꞉s humidity %
+
+m꞉s inclination towards _ º
+
+m꞉s energy _
+
+m꞉s _ energy meter
+
+m꞉s energy consumption (µWh)
+
+start
+
+reset
+
+down
+
+####
 # DrawBot Library
 # A CoreXY plotter library that supports turtle geometry
 
@@ -1874,6 +2012,92 @@ at _ % speed
 3dBot obstacle < _ cm?
 
 3dBot line on _ ?
+
+####
+# ESP32 Smart Farm
+
+voltage (V)
+
+current (mA)
+
+power (mW)
+
+open
+
+close
+
+on
+
+off
+
+Farm fan _
+
+start
+
+Farm display _ in line _
+
+Farm _ the trapdoor
+
+Farm play _ octave _ for _ ms
+
+Farm set light _
+
+Farm water pump _
+
+Farm temperature ºC
+
+Farm humidity
+
+Farm movement detected?
+
+Farm button pressed?
+
+Farm distance (cm)
+
+Farm light level
+
+Farm water level
+
+Farm soil moisture
+
+Farm steam level
+
+Farm electric consumption _
+
+####
+# ESP32 Smart Home
+
+Home fan _
+
+Home display _ in line _
+
+Home _ the window
+
+Home activate the door
+
+Home play _ octave _ for _ ms
+
+Home set light _
+
+Home temperature ºC
+
+Home humidity
+
+Home steam level
+
+Home read RFID card
+
+Home movement detected?
+
+Home _ button pressed?
+
+Home gas detected?
+
+Home set NeoPixels _ _ _ _
+
+Home clear leds
+
+Home electric consumption _
 
 ####
 # MQTT
@@ -2106,11 +2330,15 @@ Octopus OLED fill circle x _ y _ radius _
 ####
 # OctoStudio
 
-Octo start
-
 Octo beam to phones _
 
 duration _ ms
+
+Octo beam received?
+
+Octo last beam
+
+Octo set group _ (0-99)
 
 Octo receive beam
 
@@ -2200,6 +2428,8 @@ The MicroBlocks in your board is not current
 
 Try to update MicroBlocks on the board?
 
+The firmware on the board is not compatible with this version of MicroBlocks.
+
 MicroBlocks
 
 Stop
@@ -2282,11 +2512,9 @@ disable autoloading board libraries
 
 compact code store
 
-enable autoloading board libraries
+autoload board libraries
 
-enable PlugShare when project empty
-
-disable PlugShare when project empty
+PlugShare when project empty
 
 hide implementation blocks
 
@@ -2296,9 +2524,9 @@ show implementation blocks
 
 show blocks and variables that are internal to libraries (i.e. those whose name begins with underscore)
 
-when plugging a board, do not automatically read its contents into the IDE even if the current project is empty
-
 when plugging a board, automatically read its contents into the IDE if the current project is empty
+
+make the IDE darker
 
 erase flash and update firmware on ESP board
 
@@ -2321,6 +2549,12 @@ Select
 as the destination drive, then click Save.
 
 If your micro:bit shows a sad face, save the firmware.hex file to your disk then drop it onto the MICROBIT drive.
+
+Save the firmware file when prompted.
+
+Drag the firmware file you just saved to the
+
+drive
 
 Installing firmware...
 
@@ -2508,6 +2742,8 @@ Confirm
 
 # Library folders
 
+LIBRARIES
+
 Libraries
 
 AI
@@ -2678,11 +2914,25 @@ Report the milliseconds since the timer was last reset.
 
 Reset the timer.
 
+Report the seconds since power up.
+
 Report the milliseconds since power up.
 
 Report the microseconds since power up.
 
 Report the board type.
+
+Reports firmware version loaded on the board.
+
+Reports the three-letter BLE ID of the board if it supports BLE.
+
+Reports (-o) if a BLE client is connected.
+
+Report the milliseconds since the given start milliseconds. Handles clock wrap.
+
+Report the microseconds since the given start microseconds. Handles clock wrap.
+
+Reports (-o) if the board is connected to IDE.
 
 Report the electrical logic level on a digital pin ( (-o) or (o-) ).
 
@@ -2708,7 +2958,7 @@ Send a byte (0-255) to an SPI device.
 
 Read a byte from an SPI device while sending a zero byte. Report the byte received.
 
-Set the SPI clock speed and mode.
+Set the SPI clock speed, mode, channel (Raspberry Pi only), and bit order.
 
 Send a byte array via SPI, replacing its contents with the bytes received.
 
@@ -2719,6 +2969,10 @@ Close the serial port.
 Report data received from the serial port (a byte array).
 
 Send a byte array to the serial port.
+
+Send a byte array to the serial port, starting at the given byte.
+
+Write a byte to the pin at the specified baud rate.
 
 Run when the board powers up or when the IDE start button is clicked.
 
@@ -2738,11 +2992,13 @@ Wait until the condition becomes (-o) .
 
 Return (report) the given value from a function or script.
 
-Run when the given message is broadcast.
+Run when the given message is received as a broadcast.
 
 Broadcast the given message.
 
 Do nothing. Used to add notes and documentation.
+
+Report a list containing the given range of numbers (with optional increment). Useful in "for" loops.
 
 Repeat the enclosed blocks with the variable set to the current iteration number or item.
 
@@ -2755,6 +3011,8 @@ Stop all tasks except this one.
 Wait the given number of microseconds.
 
 Report the last broadcast message received.
+
+Report the given argument or defaultValue if the argument was not supplied by the caller.
 
 Call the function with the given name and optional parameter list.
 
@@ -2799,6 +3057,14 @@ Report (-o) if both values are (-o)
 Report (-o) if either value is (-o)
 
 Report (-o) if first input is a value of the given data type.
+
+Convert a value to the given data type.
+
+If the condition is (-o) report the first alternative otherwise report the second alternative.
+
+Map a value in the "from" range to the corresponding value in the "to" range.
+
+sqrt _
 
 Report the numerical value of a hexadecimal string (range: -0x1FFFFFFF to 0x1FFFFFFF)
 

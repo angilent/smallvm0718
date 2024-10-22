@@ -29,7 +29,7 @@ static int deferUpdates = false;
 	defined(TTGO_RP2040) || defined(TTGO_DISPLAY) || defined(ARDUINO_M5STACK_Core2) || \
 	defined(GAMEPAD_DISPLAY) || defined(PICO_ED) || defined(OLED_128_64) || defined(FUTURE_LITE) || \
 	defined(TFT_TOUCH_SHIELD) || defined(OLED_1106) || defined(MINGBAI) || defined(M5_CARDPUTER) || defined(M5_DIN_METER) || \
-	defined(COCUBE) || defined(XESGAME)//学而思游戏机
+	defined(COCUBE) || defined(M5_ATOMS3) || defined(XESGAME)//学而思游戏机
 
 	#ifndef COCUBE
 	#define BLACK 0
@@ -674,6 +674,73 @@ static int deferUpdates = false;
 			tftClear();
 		}
 
+	#elif defined(LUWU_CYKEBOT)
+		#undef BLACK // defined in SSD1306 header
+		#include "Adafruit_GFX.h"
+		#include "Adafruit_SSD1306.h"
+
+		#define TFT_ADDR 0x3C
+		#define TFT_WIDTH 128
+		#define TFT_HEIGHT 64
+		#define IS_MONOCHROME true
+
+		Adafruit_SSD1306 tft = Adafruit_SSD1306(TFT_WIDTH, TFT_HEIGHT, &Wire1, -1, 400000, 400000);
+
+		void tftInit() {
+			delay(5);
+			// Wire1.
+			Wire1.begin(21, 22);
+			Wire1.beginTransmission(TFT_ADDR);
+			Wire1.write(0);
+			Wire1.endTransmission();
+			Wire1.requestFrom(TFT_ADDR, 1);
+			int response = Wire1.available() ? Wire1.read() : 0;
+			if (response < 0) return; // no OLED display detected
+
+			tft.begin(SSD1306_SWITCHCAPVCC, TFT_ADDR);
+			useTFT = true;
+			tftClear();
+		}
+
+		static void i2cWriteBytes(uint8 *bytes, int byteCount) {
+			Wire1.beginTransmission(TFT_ADDR);
+			for (int i = 0; i < byteCount; i++) Wire1.write(bytes[i]);
+			Wire1.endTransmission(true);
+		}
+
+		static void oledUpdate() {
+			// Send the entire OLED buffer to the display via i2c. Takes about 30 msecs.
+			// Periodically update the LED display to avoid flicker.
+			uint8 oneLine[33];
+			uint8 setupCmds[] = {
+				0x20, 0,		// Horizontal mode
+				0x22, 0, 7,		// Page start and end address
+				0x21, 0, 0x7F	// Column start and end address
+			};
+			i2cWriteBytes(setupCmds, sizeof(setupCmds));
+			oneLine[0] = 0x40;
+			uint8 *displayBuffer = tft.getBuffer();
+			uint8 *src = displayBuffer;
+			for (int i = 0; i <= 1024; i++) {
+				if ((i % 16) == 0) {
+					captureIncomingBytes();
+				}
+				if ((i % 64) == 0) {
+					// do time-sensitive background tasks
+					updateMicrobitDisplay();
+				}
+				int col = i % 32;
+				if ((col == 0) && (i != 0)) {
+					i2cWriteBytes(oneLine, sizeof(oneLine));
+					captureIncomingBytes();
+				}
+				oneLine[col + 1] = *src++;
+			}
+		}
+
+		#undef UPDATE_DISPLAY
+		#define UPDATE_DISPLAY() { if (!deferUpdates) { oledUpdate(); taskSleep(-1); }}
+
 	#elif defined(OLED_128_64)
 		#undef BLACK // defined in SSD1306 header
 		#include "Adafruit_GFX.h"
@@ -1023,6 +1090,34 @@ static int deferUpdates = false;
 		tft.showMicroBitPixels(microBitDisplayBits, xPos, yPos);
 	}
 
+	#elif defined(M5_ATOMS3)
+		#include <Arduino_GFX_Library.h>
+		#define TFT_MOSI 21
+		#define TFT_SCLK 17
+		#define TFT_CS 15
+		#define TFT_DC 33
+		#define TFT_RST 33
+		#define TFT_BL 16
+		#define TFT_WIDTH 128
+		#define TFT_HEIGHT 128
+		#define DEFAULT_BATTERY_PIN 34
+
+		Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, -1);
+		// Arduino_GFX *tft = new Arduino_GC9107(bus, TFT_RST, 0 , true);
+		Arduino_GC9107 tft =  Arduino_GC9107(&bus, 34 /* RST */, 0 /* rotation */, true /* IPS */);
+
+    void tftInit() {
+			pinMode(TFT_BL, OUTPUT);
+			digitalWrite(TFT_BL, LOW);
+			tft.begin();
+			tft.invertDisplay(0);
+			delay(35);
+			digitalWrite(TFT_BL, HIGH);
+			useTFT = true;
+
+			delay(800);
+		}
+
 	#elif defined(COCUBE)
 		#include <Arduino_GFX_Library.h>
 		#define TFT_MOSI 19
@@ -1112,6 +1207,13 @@ static int deferUpdates = false;
 
 	#endif // end of board-specific sections
 
+static int hasTFT() {
+	#if defined(OLED_128_64)
+		if (!useTFT) tftInit();
+	#endif
+	return useTFT;
+}
+
 static int color24to16b(int color24b) {
 	// Convert 24-bit RGB888 format to the TFT's target pixel format.
 	// Return [0..1] for 1-bit display, [0-255] for grayscale, and RGB565 for 16-bit color.
@@ -1143,7 +1245,7 @@ static int color24to16b(int color24b) {
 }
 
 void tftClear() {
-	if (!useTFT) return;
+	if (!hasTFT()) return;
 
 	tft.fillScreen(BLACK);
 	UPDATE_DISPLAY();
@@ -1226,7 +1328,7 @@ OBJ primSetVib(int argCount, OBJ *args) {
 }
 
 OBJ primSetBacklight(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	if ((argCount < 1) || !isInt(args[0])) return falseObj;
 	int brightness = obj2int(args[0]);
@@ -1275,7 +1377,7 @@ OBJ primSetBacklight(int argCount, OBJ *args) {
 }
 
 static OBJ primGetWidth(int argCount, OBJ *args) {
-	if (!useTFT) return zeroObj;
+	if (!hasTFT()) return zeroObj;
 
 	#ifdef TFT_WIDTH
 		return int2obj(TFT_WIDTH);
@@ -1285,7 +1387,7 @@ static OBJ primGetWidth(int argCount, OBJ *args) {
 }
 
 static OBJ primGetHeight(int argCount, OBJ *args) {
-	if (!useTFT) return zeroObj;
+	if (!hasTFT()) return zeroObj;
 
 	#ifdef TFT_HEIGHT
 		return int2obj(TFT_HEIGHT);
@@ -1295,7 +1397,7 @@ static OBJ primGetHeight(int argCount, OBJ *args) {
 }
 
 static OBJ primSetPixel(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	int x = obj2int(args[0]);
 	int y = obj2int(args[1]);
@@ -1306,7 +1408,7 @@ static OBJ primSetPixel(int argCount, OBJ *args) {
 }
 
 static OBJ primLine(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	int x0 = obj2int(args[0]);
 	int y0 = obj2int(args[1]);
@@ -1319,7 +1421,7 @@ static OBJ primLine(int argCount, OBJ *args) {
 }
 
 static OBJ primRect(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	int x = obj2int(args[0]);
 	int y = obj2int(args[1]);
@@ -1337,7 +1439,7 @@ static OBJ primRect(int argCount, OBJ *args) {
 }
 
 static OBJ primRoundedRect(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	int x = obj2int(args[0]);
 	int y = obj2int(args[1]);
@@ -1356,7 +1458,7 @@ static OBJ primRoundedRect(int argCount, OBJ *args) {
 }
 
 static OBJ primCircle(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	int x = obj2int(args[0]);
 	int y = obj2int(args[1]);
@@ -1373,7 +1475,7 @@ static OBJ primCircle(int argCount, OBJ *args) {
 }
 
 static OBJ primTriangle(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	int x0 = obj2int(args[0]);
 	int y0 = obj2int(args[1]);
@@ -1393,7 +1495,7 @@ static OBJ primTriangle(int argCount, OBJ *args) {
 }
 
 static OBJ primText(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	OBJ value = args[0];
 	int x = obj2int(args[1]);
@@ -1430,7 +1532,7 @@ static OBJ primText(int argCount, OBJ *args) {
 }
 
 static OBJ primClear(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 	tftClear();
 	return falseObj;
 }
@@ -1520,13 +1622,13 @@ static OBJ primAprilTag(int argCount, OBJ *args) {
 // display update control
 
 static OBJ primDeferUpdates(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 	deferUpdates = true;
 	return falseObj;
 }
 
 static OBJ primResumeUpdates(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 	deferUpdates = false;
 	UPDATE_DISPLAY();
 	return falseObj;
@@ -1535,7 +1637,7 @@ static OBJ primResumeUpdates(int argCount, OBJ *args) {
 // 8 bit bitmap ops
 
 static OBJ primMergeBitmap(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	OBJ bitmap = args[0];
 	int bitmapWidth = obj2int(args[1]);
@@ -1570,7 +1672,7 @@ static OBJ primMergeBitmap(int argCount, OBJ *args) {
 uint16_t bufferPixels[TFT_WIDTH * 8];
 
 static OBJ primDrawBuffer(int argCount, OBJ *args) {
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 
 	OBJ buffer = args[0];
 	OBJ palette = args[1]; // List, index-1 based
@@ -1608,7 +1710,7 @@ static OBJ primDrawBuffer(int argCount, OBJ *args) {
 				}
 			}
 		}
-		#ifdef COCUBE
+		#if defined(COCUBE) ||  defined(M5_ATOMS3)
 			tft.fillRect(
 			originX * scale,
 			(originY + y) * scale,
@@ -1634,7 +1736,7 @@ static OBJ primDrawBuffer(int argCount, OBJ *args) {
 static OBJ primDrawBitmap(int argCount, OBJ *args) {
 	// Draw an 8-bit bitmap at a given position without scaling.
 
-	if (!useTFT) return falseObj;
+	if (!hasTFT()) return falseObj;
 	uint32 palette[256];
 
 	if (argCount < 4) return fail(notEnoughArguments);

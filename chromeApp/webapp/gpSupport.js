@@ -375,14 +375,16 @@ function handleMessage(evt) {
 			// Boardie sent us bytes. Let's add them to the serial buffer.
 			GP_serialInputBuffers.push(msg);
 		}
-	} else if (msg.startsWith('showButton ')) {
-		var btn = document.getElementById(msg.substring(11));
-		if (btn) btn.style.display = 'inline';
-	} else if (msg.startsWith('hideButton ')){
-		var btn = document.getElementById(msg.substring(11));
-		if (btn) btn.style.display = 'none';
-	} else {
-		queueGPMessage(msg);
+	} else if (typeof msg === 'string' || msg instanceof String) {
+		if (msg.startsWith('showButton ')) {
+			var btn = document.getElementById(msg.substring(11));
+			if (btn) btn.style.display = 'inline';
+		} else if (msg.startsWith('hideButton ')){
+			var btn = document.getElementById(msg.substring(11));
+			if (btn) btn.style.display = 'none';
+		} else {
+			queueGPMessage(msg);
+		}
 	}
 }
 
@@ -448,8 +450,21 @@ function adjustButtonVisibility() {
 	if ((typeof window !== 'undefined') && (window.location.href.includes('go.html'))) {
 		document.getElementById('SeeInsideButton').style.display = 'inline';
 		document.getElementById('PresentButton').style.display = 'none';
-	} else if ((typeof window !== 'undefined') && (window.location.href.includes('microblocks.html'))) {
+	} else if ((typeof window !== 'undefined') && (window.location.href.includes('microblocks'))) {
 		document.getElementById('controls').style.display = 'none';
+		if (isKindle || isOtherMobile) {
+			// show the keyboard button on mobile devices, but hide others
+			document.getElementById('controls').style.display = 'inline';
+			document.getElementById('KeyboardButton').style.display = 'inline';
+			document.getElementById('BackspaceButton').style.display = 'none';
+			document.getElementById('FullscreenButton').style.display = 'none';
+			document.getElementById('UploadButton').style.display = 'none';
+			document.getElementById('EnableMicrophoneButton').style.display = 'none';
+			document.getElementById('SeeInsideButton').style.display = 'none';
+			document.getElementById('PresentButton').style.display = 'none';
+			document.getElementById('GoButton').style.display = 'none';
+			document.getElementById('StopButton').style.display = 'none';
+		}
 	} else {
 		document.getElementById('SeeInsideButton').style.display = 'none';
 		document.getElementById('PresentButton').style.display = 'inline';
@@ -849,8 +864,9 @@ async function webSerialConnect() {
 		{ usbVendorId: 0x03eb},		// Atmel Corporation
 		{ usbVendorId: 0x1366},		// SEGGER Calliope mini
 		{ usbVendorId: 0x16c0},		// Teensy
-		{ usbVendorId: 0x2E8A},		// Raspberry Pi Pico RP2040
+		{ usbVendorId: 0x2e8a},		// Raspberry Pi Pico RP2040
 		{ usbVendorId: 0x303a},		// Espressif USB JTAG/serial debug unit
+		{ usbVendorId: 0x28e9},  	// GD32 USB CDC ACM
 	];
 	webSerialDisconnect();
 	GP_webSerialPort = await navigator.serial.requestPort({filters: vendorIDs}).catch((e) => { console.log(e); });
@@ -1246,8 +1262,8 @@ async function GP_writeFile(data, fName, id) {
 		};
 		chrome.fileSystem.chooseEntry(options, onFileSelected);
 	} else if (typeof window.showSaveFilePicker != 'undefined') { // Native Filesystem API
-		if (/(CrOS)/.test(navigator.userAgent)) {
-			// On Chromebooks, the extension is not automatically appended.
+		if (/(CrOS)/.test(navigator.userAgent) || /Linux/.test(navigator.userAgent)) {
+			// On Chromebooks and Linux, the extension is not automatically appended.
 			fName = fName + '.' + ext;
 		}
 		options = { suggestedName: fName, id: id };

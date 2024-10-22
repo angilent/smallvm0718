@@ -23,6 +23,7 @@ cp -r ../../gp/runtime .
 cp ../../ide/* runtime/lib
 mv runtime/lib/MicroBlocksPatches.gp runtime/lib/zzzMicroBlocksPatches.gp # makes patches load last
 cp -r ../../translations .
+cp -r ../../img .
 
 emcc -std=gnu99 -Wall -O3 \
 -D EMSCRIPTEN \
@@ -34,7 +35,6 @@ emcc -std=gnu99 -Wall -O3 \
 -s FETCH=1 \
 -s TOTAL_MEMORY=268435456 \
 -s ALLOW_MEMORY_GROWTH=0 \
---memory-init-file 0 \
 -s WASM=1 \
 browserPrims.c cache.c dict.c embeddedFS.c events.c gp.c httpPrims.c interp.c mem.c memGC.c oop.c parse.c \
 pathPrims.c prims.c serialPortPrims.c sha1.c sha2.c soundPrims.c textAndFontPrims.c vectorPrims.c \
@@ -44,6 +44,7 @@ pathPrims.c prims.c serialPortPrims.c sha1.c sha2.c soundPrims.c textAndFontPrim
 --preload-file esp32 \
 --preload-file runtime \
 --preload-file translations \
+--preload-file img \
 -o gp_wasm.html
 
 # copy the compiler output files to the webapp folder
@@ -64,3 +65,4 @@ rm -r precompiled
 rm -r esp32
 rm -r runtime
 rm -r translations
+rm -r img

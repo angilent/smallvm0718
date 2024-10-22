@@ -94,7 +94,7 @@ typedef struct {
 	uint8 currentChunkIndex; // chunk index when inside a function
 	uint32 wakeTime;
 	OBJ code;
-	int ip;
+	int ip; // ip offset in code
 	int sp;
 	int fp;
 	OBJ stack[STACK_LIMIT];
@@ -147,6 +147,7 @@ extern int extraByteDelay;
 #define varNameMsg				29
 #define extendedMsg				30
 #define enableBLEMsg			31
+#define chunkCode16Msg			32
 
 // Serial Protocol Messages: CRC Exchange
 
@@ -435,8 +436,7 @@ typedef const struct {
 } PrimEntry;
 
 void addPrimitiveSet(PrimitiveSetIndex primSetIndex, const char *setName, int entryCount, PrimEntry *entries);
-OBJ callPrimitive(int argCount, OBJ *args);
-OBJ newPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCount, OBJ *args);
+OBJ doPrimitiveCall(PrimitiveSetIndex setIndex, const char *primName, int argCount, OBJ *args);
 void primsInit();
 
 #ifdef __cplusplus

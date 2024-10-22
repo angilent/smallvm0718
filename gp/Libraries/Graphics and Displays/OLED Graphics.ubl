@@ -1,6 +1,6 @@
 module 'OLED Graphics' Output
 author 'Turgut Guneysu'
-version 1 13 
+version 1 14 
 choices DispTypeMenu 'OLED_0.96in' 'OLED_2.42in' 
 choices OnOffMenu On Off 
 choices VideoMenu Inverse Normal 
@@ -21,6 +21,7 @@ Changes:
 - filled rectangle
 - image draw bug fix
 - stack overflow fix
+- improve conversion ops, i2c io, rect fill, img processing, and buffer displays
 '
 variables OLEDReady OLEDi2cAddr _GDBuffer _begCol _begRow _cDecTBL _comma _cTABLE _comMode _dcPin _delayGDUpd _displayType _endCol _endRow _eol _resetPin _textX _textY _dataPrefix _byteCount _imgData _imgWidth _imgHeight 
 
@@ -35,7 +36,7 @@ variables OLEDReady OLEDi2cAddr _GDBuffer _begCol _begRow _cDecTBL _comma _cTABL
   spec ' ' 'OLEDdrawLine' 'draw line from x _ y _ to x _ y _ erase _' 'auto auto auto auto bool' 0 0 127 63 false
   spec ' ' 'OLEDdrawRect' 'draw rectangle x _ y _ w _ h _ erase _ rounding(3-15) _' 'auto auto auto auto bool auto' 0 0 127 63 false 0
   spec ' ' 'OLEDfillRect' 'fill rectangle x _ y _ w _ h _ erase _' 'auto auto auto auto bool' 20 20 30 20 false
-  spec ' ' 'OLEDflip' '_flip display top _' 'bool' false
+  spec ' ' '_OLEDflip' '_flip display top _' 'bool' false
   spec 'r' 'OLEDmakeImage' 'make image _' 'microbitDisplay' 33084991
   spec ' ' 'OLEDpixel' 'set pixel x _ y _ erase _' 'auto auto bool' 0 0 false
   spec ' ' 'OLEDsetVideo' 'set video _' 'str.VideoMenu' 'Inverse'
@@ -80,7 +81,7 @@ flip setting controls display hardware write direction:
   _comma = ('[data:unicodeString]' 44)
   _comMode = 'i2c'
   OLEDi2cAddr = (hexToInt ('[data:join]' ('[data:unicodeString]' 32) i2cAddr))
-  if (_displayType != 0) { 
+  if (_displayType != 0) {
     return
   }
   if (dispType == 'OLED_0.96in') {
@@ -92,7 +93,7 @@ flip setting controls display hardware write direction:
   }
   '_initDisplayHW'
   if flip {
-    OLEDflip true
+    _OLEDflip true
   }
   '_initLibrary'
   OLEDclear
@@ -117,7 +118,7 @@ flip setting controls display hardware write direction:
   _comma = ('[data:unicodeString]' 44)
   _comMode = 'spi'
   _dcPin = dcPin
-  if (_displayType != 0) { 
+  if (_displayType != 0) {
     return
   }
   if (dispType == 'OLED_0.96in') {
@@ -130,7 +131,7 @@ flip setting controls display hardware write direction:
   '[sensors:spiSetup]' 10000000
   '_initDisplayHW'
   if flip {
-    OLEDflip true
+    _OLEDflip true
   }
   '_initLibrary'
   OLEDclear
@@ -338,9 +339,9 @@ Does not check for reversed rectangle coordinates for round corners.'
 }
 
 to OLEDfillRect x y w h erase {
-  for row h {
-    for col w {
-      OLEDpixel (x + (col - 1)) (y + (row - 1)) erase
+  for row ('[data:range]' 0 (h - 1)) {
+    for col ('[data:range]' 0 (w - 1)) {
+      OLEDpixel (x + col) (y + row) erase
     }
   }
   if (not _delayGDUpd) {
@@ -348,7 +349,7 @@ to OLEDfillRect x y w h erase {
   }
 }
 
-to OLEDflip flip {
+to _OLEDflip flip {
   comment 'Flips the display initialization horizontally or vertically.
 Horizontal or vertical is based on the pin connector location.'
   if flip {
@@ -440,10 +441,11 @@ spi:
   '_initCheck'
   if (_comMode == 'i2c') {
     local 'idx' 0
-    repeat 17 {
-      '[sensors:i2cWrite]' OLEDi2cAddr ('[data:join]' _dataPrefix ('[data:copyFromTo]' _GDBuffer idx (idx + 60)))
-      idx += 61
+    repeat 4 {
+      '[sensors:i2cWrite]' OLEDi2cAddr ('[data:join]' _dataPrefix ('[data:copyFromTo]' _GDBuffer idx (idx + 254)))
+      idx += 255
     }
+    '[sensors:i2cWrite]' OLEDi2cAddr ('[data:join]' _dataPrefix ('[data:copyFromTo]' _GDBuffer idx (idx + 8)))
   } else {
     '_SPIWriteData'
     '[sensors:spiExchange]' ('[data:copyFromTo]' _GDBuffer 1)
@@ -629,12 +631,11 @@ to '_clearDisplay' {
   comment 'Clear Screen without initializing _GDBuffer'
   '_initCheck'
   '_OLEDcursorReset'
-  local 'clearBuff' ('[data:newByteArray]' 60 0)
   if ('i2c' == _comMode) {
-    repeat 17 {
-      '[sensors:i2cWrite]' OLEDi2cAddr ('[data:join]' _dataPrefix clearBuff)
+    repeat 4 {
+      '[sensors:i2cWrite]' OLEDi2cAddr ('[data:join]' _dataPrefix ('[data:newByteArray]' 254 0))
     }
-    '[sensors:i2cWrite]' OLEDi2cAddr ('[data:join]' _dataPrefix clearBuff)
+    '[sensors:i2cWrite]' OLEDi2cAddr ('[data:join]' _dataPrefix ('[data:newByteArray]' 8 0))
   } else {
     '_SPIWriteData'
     '[sensors:spiExchange]' ('[data:newByteArray]' 1024)
@@ -689,18 +690,17 @@ to '_dec2hex' num {
   local '_hexTbl' '0123456789ABCDEF'
   local 'hexNum' ''
   repeatUntil (num < 0) {
+    local 'temp' ('[data:join]' (at ((num % 16) + 1) _hexTbl) hexNum)
     if ((num / 16) != 0) {
-      hexNum = ('[data:join]' (at ((num % 16) + 1) _hexTbl) hexNum)
+      hexNum = temp
       num = (num / 16)
     } else {
-      hexNum = ('[data:join]' (at ((num % 16) + 1) _hexTbl) hexNum)
+      hexNum = temp
       num = -1
     }
   }
   comment 'If not half-byte length, pad it.'
-  repeatUntil (((size hexNum) % 4) == 0) {
-    hexNum = ('[data:join]' '0' hexNum)
-  }
+  hexNum = ('[data:join]' ('[data:copyFromTo]' '000' 1 (4 - (size hexNum))) hexNum)
   return hexNum
 }
 
@@ -810,11 +810,12 @@ _imgWidth and _imgHeight (mod8) are dimensions.'
     }
     _imgData = ('[data:newByteArray]' ((_imgWidth * _imgHeight) / 8))
   }
-  for byte ((size image) / 2) {
-    atPut (_byteCount + byte) _imgData (hexToInt ('[data:copyFromTo]' image _ptr (_ptr + 1)))
-    _ptr += 2
+  for byte ('[data:range]' 1 (size image) 2) {
+    atPut (_byteCount + _ptr) _imgData (hexToInt ('[data:copyFromTo]' image byte (byte + 1)))
+    _ptr += 1
   }
-  _byteCount += byte
+  _byteCount += (_ptr - 1)
+  sayIt (size image) byte _ptr _byteCount
 }
 
 to '_sendCmd' cmdString {
