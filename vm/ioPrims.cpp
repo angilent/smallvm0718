@@ -840,6 +840,24 @@ void hardwareInit() {
 		0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1};
 
+#elif defined(M5_STAMP_DIAL)
+	#define BOARD_TYPE "M5DIAL"
+	#define DIGITAL_PINS 49
+	#define ANALOG_PINS 20
+	#define TOTAL_PINS 49
+	static const int analogPin[] = {};
+	#define PIN_LED -1
+	#define PIN_BUTTON_A 42
+	#undef BUTTON_PRESSED
+	#define BUTTON_PRESSED HIGH
+	#define DEFAULT_TONE_PIN 3
+	static const char reservedPin[TOTAL_PINS] = {
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 1, 1, 1, 1, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 1, 1, 0, 0, 0, 0};
+
 #elif defined(DATABOT)
 	#define BOARD_TYPE "Databot"
 	#define DIGITAL_PINS 40

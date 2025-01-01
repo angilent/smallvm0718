@@ -62,6 +62,9 @@
 #elif defined(ARDUINO_M5STACK_CORES3)
 	#define PIN_WIRE_SCL 11
 	#define PIN_WIRE_SDA 12
+#elif defined(M5_STAMP_DIAL)
+	#define PIN_WIRE_SCL 12
+	#define PIN_WIRE_SDA 11
 #elif defined(ARDUINO_M5STACK_Core2_IN)
 	#define PIN_WIRE_SCL 22
 	#define PIN_WIRE_SDA 21
@@ -2481,7 +2484,7 @@ static int readDigitalMicrophone() {
 }
 
 #elif defined(M5_CARDPUTER)  || defined(FUTURE_LITE) || defined(ARDUINO_M5Stick_C) \
-|| defined(ARDUINO_M5STACK_Core2) || defined(ARDUINO_M5Atom_Matrix_ESP32)
+|| defined(ARDUINO_M5STACK_Core2) || defined(ARDUINO_M5Atom_Matrix_ESP32) || defined(ARDUINO_M5Stick_C2)
 
 #define USE_DIGITAL_MICROPHONE 1
 
@@ -2497,7 +2500,7 @@ static int readDigitalMicrophone() {
 #elif defined(ARDUINO_M5Atom_Matrix_ESP32)
 	#define PIN_CLK  33
 	#define PIN_DATA 23
-#elif defined(ARDUINO_M5Stick_C) || defined(ARDUINO_M5STACK_Core2) 
+#elif defined(ARDUINO_M5Stick_C) || defined(ARDUINO_M5STACK_Core2) || defined(ARDUINO_M5Stick_C2)
 	#define PIN_CLK  0
 	#define PIN_DATA 34
 #endif

@@ -29,7 +29,8 @@ static int deferUpdates = false;
 	defined(TTGO_RP2040) || defined(TTGO_DISPLAY) || defined(ARDUINO_M5STACK_Core2) || \
 	defined(GAMEPAD_DISPLAY) || defined(PICO_ED) || defined(OLED_128_64) || defined(FUTURE_LITE) || \
 	defined(TFT_TOUCH_SHIELD) || defined(OLED_1106) || defined(MINGBAI) || defined(M5_CARDPUTER) || defined(M5_DIN_METER) || \
-	defined(COCUBE) || defined(COCUBE_SOCCER) || defined(M5_ATOMS3) || defined(ADAFRUIT_FER_TFT) || defined(XESGAME) || defined(ARDUINO_M5CoreInk)
+	defined(COCUBE) || defined(COCUBE_SOCCER) || defined(M5_ATOMS3) || defined(ADAFRUIT_FER_TFT) || defined(XESGAME) || \
+	defined(ARDUINO_M5CoreInk) || defined(M5_STAMP_DIAL)
 
 	#if !defined(COCUBE) && !defined(COCUBE_SOCCER)
 	#define BLACK 0
@@ -1244,6 +1245,24 @@ static int deferUpdates = false;
 			tft.invertDisplay(true);
 			useTFT = true;
 		}
+	#elif defined(M5_STAMP_DIAL)
+		#define LGFX_AUTODETECT 
+		#include <LovyanGFX.hpp>
+		#include <LGFX_AUTODETECT.hpp>
+		  
+		static LGFX tft;  
+		#define TFT_WIDTH 240
+		#define TFT_HEIGHT 240
+
+		void tftInit() {
+			pinMode(46, OUTPUT);
+			digitalWrite(46, HIGH);
+			tft.init();
+			tft.setBrightness(128);
+			tft.invertDisplay(true);
+			useTFT = true;
+		}
+
 	#elif defined(COCUBE_SOCCER)
 		#include <Arduino_GFX_Library.h>
 		#define TFT_MOSI 23
@@ -1519,7 +1538,7 @@ static OBJ primPixelRow(int argCount, OBJ *args) {
 			OBJ pixelObj = FIELD(pixelDataObj, (i + 1));
 			bufferPixels[i] = (isInt(pixelObj)) ? color24to16b(obj2int(pixelObj)) : 0;
 		}
-		#if defined(COCUBE) || defined(COCUBE_SOCCER) ||  defined(M5_ATOMS3) || defined(ARDUINO_M5CoreInk)
+		#if defined(COCUBE) || defined(COCUBE_SOCCER) ||  defined(M5_ATOMS3) || defined(ARDUINO_M5CoreInk) || defined(M5_STAMP_DIAL)
         	tft.fillRect(x, y, pixelCount, 1, bufferPixels[0]);
 		#else
 			tft.drawRGBBitmap(x, y, bufferPixels, pixelCount, 1);
@@ -1554,7 +1573,7 @@ static OBJ primPixelRow(int argCount, OBJ *args) {
 				byte += bytesPerPixel;
 			}
 		}
-		#if defined(COCUBE) || defined(COCUBE_SOCCER) ||  defined(M5_ATOMS3) || defined(ARDUINO_M5CoreInk)
+		#if defined(COCUBE) || defined(COCUBE_SOCCER) ||  defined(M5_ATOMS3) || defined(ARDUINO_M5CoreInk) || defined(M5_STAMP_DIAL)
         	tft.fillRect(x, y, pixelCount, 1, bufferPixels[0]);
 		#else
 			tft.drawRGBBitmap(x, y, bufferPixels, pixelCount, 1);
@@ -1865,7 +1884,7 @@ static OBJ primDrawBuffer(int argCount, OBJ *args) {
 				}
 			}
 		}
-		#if defined(COCUBE) || defined(COCUBE_SOCCER) ||  defined(M5_ATOMS3) || defined(ARDUINO_M5CoreInk)
+		#if defined(COCUBE) || defined(COCUBE_SOCCER) ||  defined(M5_ATOMS3) || defined(ARDUINO_M5CoreInk) || defined(M5_STAMP_DIAL)
 			tft.fillRect(
 			originX * scale,
 			(originY + y) * scale,
