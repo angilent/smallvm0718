@@ -1246,20 +1246,15 @@ static int deferUpdates = false;
 			useTFT = true;
 		}
 	#elif defined(M5_STAMP_DIAL)
-		#define LGFX_AUTODETECT 
-		#include <LovyanGFX.hpp>
-		#include <LGFX_AUTODETECT.hpp>
-		  
-		static LGFX tft;  
+		#include <M5GFX.h>	  
+		static M5GFX  tft;  
 		#define TFT_WIDTH 240
 		#define TFT_HEIGHT 240
 
 		void tftInit() {
 			pinMode(46, OUTPUT);
 			digitalWrite(46, HIGH);
-			tft.init();
-			tft.setBrightness(128);
-			tft.invertDisplay(true);
+			tft.begin();
 			useTFT = true;
 		}
 

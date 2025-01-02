@@ -158,6 +158,11 @@ void hardwareInit() {
         #include "soc/rtc_cntl_reg.h"  // for brownout control
         WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
 	#endif
+	#if defined(M5_STAMP_DIAL)
+		pinMode(46, OUTPUT);
+		digitalWrite(46, HIGH);		
+		delay(200);
+	#endif
 	#if defined(TX_FT_BOX)
 		pinMode(37, OUTPUT);
 		pinMode(33, OUTPUT);
