@@ -1231,7 +1231,7 @@ static int deferUpdates = false;
 		}
 	
 	#elif defined(ARDUINO_M5CoreInk)
-	  #define LGFX_AUTODETECT 
+	  	#define LGFX_AUTODETECT 
 		#include <LovyanGFX.hpp>
 		#include <LGFX_AUTODETECT.hpp>
 		  
@@ -1252,8 +1252,8 @@ static int deferUpdates = false;
 		#define TFT_HEIGHT 240
 
 		void tftInit() {
-			pinMode(46, OUTPUT);
-			digitalWrite(46, HIGH);
+			// pinMode(46, OUTPUT);
+			// digitalWrite(46, HIGH);
 			tft.begin();
 			useTFT = true;
 		}
