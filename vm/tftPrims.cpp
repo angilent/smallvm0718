@@ -882,17 +882,17 @@ static int deferUpdates = false;
 		#include "Adafruit_GFX.h"
 		#include "Adafruit_ST7735.h"
 
-		#define TFT_MOSI 13
-		#define TFT_SCLK 14
-		#define TFT_CS 18
-		#define TFT_DC 16
-		#define TFT_RST 17
-		#define TFT_WIDTH 128
+		#define TFT_MOSI 23
+		#define TFT_SCLK 18
+		#define TFT_CS 27
+		#define TFT_DC 25
+		#define TFT_RST 26
+		#define TFT_WIDTH 168
 		#define TFT_HEIGHT 128
 		Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 
 		void tftInit() {
-			tft.initR(INITR_144GREENTAB);
+			tft.initR(INITR_BLACKTAB);
 			tft.setRotation(3);
 			tft.fillScreen(ST77XX_BLACK);
 			useTFT = true;
